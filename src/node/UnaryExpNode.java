@@ -12,12 +12,14 @@ public class UnaryExpNode {
     private UnaryOpNode unaryOpNode;
     private UnaryExpNode unaryExpNode;
 
-    public UnaryExpNode(PrimaryExpNode primaryExpNode, Token ident, Token lparent, FuncRParamsNode funcRParamsNode, Token rparent) {
+    public UnaryExpNode(PrimaryExpNode primaryExpNode, Token ident, Token lparent, FuncRParamsNode funcRParamsNode, Token rparent,UnaryOpNode unaryOpNode,UnaryExpNode unaryExpNode) {
         this.primaryExpNode = primaryExpNode;
         this.ident = ident;
         this.lparent = lparent;
         this.funcRParamsNode = funcRParamsNode;
         this.rparent = rparent;
+        this.unaryOpNode = unaryOpNode;
+        this.unaryExpNode = unaryExpNode;
     }
     public void print(){
         if (primaryExpNode!=null){

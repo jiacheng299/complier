@@ -2,32 +2,26 @@ package node;
 
 import front.Token;
 
-// EqExp → RelExp | EqExp ('==' | '!=') RelExp
-public class EqExpNode {
-    private RelExpNode relExpNode;
-    private EqExpNode eqExpNode;
-    private Token eql;
-    private Token neq;
+import java.util.List;
 
-    public EqExpNode(RelExpNode relExpNode, EqExpNode eqExpNode, Token eql, Token neq) {
+// EqExp → RelExp | EqExp ('==' | '!=') RelExp
+//EqExp → RelExp {('==' | '!=') RelExp}
+public class EqExpNode {
+    private List<RelExpNode> relExpNode;
+    private List<Token> eqlOrNeqs;
+
+    public EqExpNode(List<RelExpNode> relExpNode, List<Token> eqlOrNeqs) {
         this.relExpNode = relExpNode;
-        this.eqExpNode = eqExpNode;
-        this.eql = eql;
-        this.neq = neq;
+        this.eqlOrNeqs = eqlOrNeqs;
     }
+
+
     public void print(){
-        if (eqExpNode!=null){
-            eqExpNode.print();
-            if (eql!=null){
-                System.out.println(eql.toString());
-            }
-            else{
-                System.out.println(neq.toString());
-            }
-            relExpNode.print();
-        }
-        else{
-            relExpNode.print();
+        relExpNode.get(0).print();
+        for (int i=0;i<eqlOrNeqs.size();i++){
+            System.out.println("EqExpNode");
+            System.out.println(eqlOrNeqs.get(i).toString());
+            relExpNode.get(i+1).print();
         }
         System.out.println("EqExpNode");
     }

@@ -2,42 +2,26 @@ package node;
 
 import front.Token;
 
-// RelExp → AddExp | RelExp ('<' | '>' | '<=' | '>=') AddExp
-public class RelExpNode {
-    private AddExpNode addExpNode;
-    private RelExpNode relExpNode;
-    private Token lss;
-    private Token gre;
-    private Token leq;
-    private Token geq;
+import java.util.List;
 
-    public RelExpNode(AddExpNode addExpNode, RelExpNode relExpNode, Token lss, Token gre, Token leq, Token geq) {
-        this.addExpNode = addExpNode;
-        this.relExpNode = relExpNode;
-        this.lss = lss;
-        this.gre = gre;
-        this.leq = leq;
-        this.geq = geq;
+// RelExp → AddExp | RelExp ('<' | '>' | '<=' | '>=') AddExp
+//RelExp → AddExp {('<' | '>' | '<=' | '>=') AddExp}
+public class RelExpNode {
+    private List<AddExpNode> addExpNodes;
+    private List<Token> ops;
+
+    public RelExpNode(List<AddExpNode> addExpNodes, List<Token> ops) {
+        this.addExpNodes = addExpNodes;
+        this.ops = ops;
     }
+
     public void print(){
-        if(relExpNode!=null){
-            relExpNode.print();
-            if (lss!=null){
-                System.out.println(lss.toString());
-            } else if (gre!=null) {
-                System.out.println(gre.toString());
-            }
-            else if (leq!=null) {
-                System.out.println(leq.toString());
-            }
-            else if (geq!=null) {
-                System.out.println(geq.toString());
-            }
-            addExpNode.print();
+        addExpNodes.get(0).print();
+        for (int i=0;i<ops.size();i++){
+            System.out.println("RelExpNode");
+            System.out.println(ops.get(i).toString());
+            addExpNodes.get(i+1).print();
         }
-        else{
-            addExpNode.print();
-        }
-        System.out.println();
+        System.out.println("RelExpNode");
     }
 }

@@ -2,25 +2,24 @@ package node;
 
 import front.Token;
 
-//LAndExp → EqExp | LAndExp '&&' EqExp
-public class LAndExpNode {
-    private EqExpNode eqExpNode;
-    private LAndExpNode lAndExpNode;
-    private Token and;
+import java.util.List;
 
-    public LAndExpNode(EqExpNode eqExpNode, LAndExpNode lAndExpNode, Token and) {
-        this.eqExpNode = eqExpNode;
-        this.lAndExpNode = lAndExpNode;
-        this.and = and;
+//LAndExp → EqExp | LAndExp '&&' EqExp
+//LAndExp → EqExp {'&&' EqExp}
+public class LAndExpNode {
+    private List<EqExpNode> eqExpNodes;
+    private List<Token> ands;
+
+    public LAndExpNode(List<EqExpNode> eqExpNodes, List<Token> ands) {
+        this.eqExpNodes = eqExpNodes;
+        this.ands = ands;
     }
     public void print(){
-        if (lAndExpNode!=null){
-            lAndExpNode.print();
-            System.out.println(and.toString());
-            eqExpNode.print();
-        }
-        else{
-            eqExpNode.print();
+        eqExpNodes.get(0).print();
+        for (int i=0;i<ands.size();i++){
+            System.out.println("LAndExpNode");
+            System.out.println(ands.get(i).toString());
+            eqExpNodes.get(i+1).print();
         }
         System.out.println("LAndExpNode");
     }

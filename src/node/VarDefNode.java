@@ -33,7 +33,7 @@ public class VarDefNode {
         }
         if(assign!=null){
             System.out.println(assign.toString());
-            InitValNode.print();
+            initValNode.print();
         }
         System.out.println("VarDefNode");
     }
