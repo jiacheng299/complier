@@ -1,6 +1,6 @@
 package front;
 
-import node.NodeType;
+import node.*;
 
 import java.util.List;
 
@@ -12,43 +12,148 @@ public class Parser {
         this.tokens = tokens;
         this.currentTokenIndex = 0;
     }
-
+    private void error(){
+        System.out.println("error");
+    }
     // 解析入口方法
     public void parse() {
         compUnit();
     }
 
     // CompUnit规则
-    private void compUnit() {
+    private CompUnitNode compUnit() {
+        // CompUnit -> {Decl} {FuncDef} MainFuncDef
+        List<DeclNode>declNodes = null;
+        List<FuncDefNode>funcDefNodes=null;
+        MainFuncDefNode mainFuncDefNode=null;
         while (hasNextToken()) {
-            if (tokens.get(currentTokenIndex+2).getType()!=TokenType.LPARENT&&tokens.get(currentTokenIndex+1).getType()!=TokenType.MAINTK) {
-                decl();
-            } else if () {
-                funcDef();
+            if (tokens.get(currentTokenIndex+2).getType()!=TokenType.LPARENT&&tokens.get(currentTokenIndex).getType()!=TokenType.INTTK) {
+                declNodes.add(decl());
+            } else if (tokens.get(currentTokenIndex).getType()!=TokenType.INTTK) {
+                funcDefNodes.add(funcDef());
             } else {
                 break;
             }
         }
-        mainFuncDef();
+        mainFuncDefNode=mainFuncDef();
+        return new CompUnitNode(declNodes,funcDefNodes,mainFuncDefNode);
     }
 
     // Decl规则
-    private void decl() {
-        // 处理声明语句
-        // ...
+    private DeclNode decl() {
+        // Decl → ConstDecl | VarDecl
+        ConstDeclNode constDeclNode=null;
+        VarDeclNode varDeclNode=null;
+        if(tokens.get(currentTokenIndex).getType()==TokenType.CONSTTK){
+            constDeclNode=constDecl();
+        } else if (tokens.get(currentTokenIndex).getType()==TokenType.INTTK) {
+            varDeclNode=varDecl();
+        }
+        else{
+            error();
+        }
+        return new DeclNode(constDeclNode,varDeclNode);
     }
 
+    private ConstDeclNode constDecl() {
+        //ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
+        Token consttk=match(TokenType.CONSTTK);
+        BTypeNode bTypeNode=Btype();
+        ConstDefNode constDefNode=ConstDef();
+        List<Token> commas=null;
+        List<ConstDefNode> constDefNodes=null;
+        while(tokens.get(currentTokenIndex).getType()==TokenType.COMMA){
+            commas.add(match(TokenType.COMMA));
+            constDefNodes.add(ConstDef());
+        }
+        Token semi=match(TokenType.SEMICN);
+        return new ConstDeclNode(consttk,bTypeNode,constDefNode,commas,constDefNodes,semi);
+    }
+    private BTypeNode Btype() {
+        // BType → 'int'
+        Token inttk=match(TokenType.INTTK);
+        return new BTypeNode(inttk);
+    }
+    private ConstDefNode ConstDef() {
+        // ConstDef → Ident { '[' ConstExp ']' } '=' ConstInitVal
+        Token ident=match(TokenType.IDENFR);
+        List<Token> lbracks=null;
+        List<ConstExpNode> constExpNodes=null;
+        List<Token> rbracks=null;
+        Token assign=null;
+        ConstInitValNode constInitValNode=null;
+        while (tokens.get(currentTokenIndex).getType()==TokenType.LBRACK){
+            lbracks.add(match(TokenType.LBRACK));
+            constExpNodes.add(ConstExp());
+            rbracks.add(match(TokenType.RBRACK));
+        }
+        assign=match(TokenType.ASSIGN);
+        constInitValNode=ConstInitVal();
+        return new ConstDefNode(ident,lbracks,constExpNodes,rbracks,assign,constInitValNode);
+    }
+
+    private ConstInitValNode ConstInitVal() {
+        //ConstInitVal → ConstExp| '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
+        ConstExpNode constExpNode=null;
+        Token lbrace=null;
+        List<Token> commas=null;
+        List<ConstInitValNode>constInitValNodes=null;
+        Token rbrace=null;
+        if (tokens.get(currentTokenIndex).getType()==TokenType.LBRACE){
+            lbrace=match(TokenType.LBRACE);
+            if (tokens.get(currentTokenIndex).getType()==TokenType.RBRACE){
+            }
+            else{
+                constInitValNodes.add(ConstInitVal());
+                while(tokens.get(currentTokenIndex).getType()==TokenType.COMMA){
+                    commas.add(match(TokenType.COMMA));
+                    constInitValNodes.add(ConstInitVal());
+                }
+            }
+            rbrace=match(TokenType.RBRACE);
+        }
+        else {
+            constExpNode=ConstExp();
+        }
+        return new ConstInitValNode(constExpNode,lbrace,constInitValNodes,commas,rbrace);
+    }
+    private VarDeclNode varDecl() {
+        // VarDecl → BType VarDef { ',' VarDef } ';'
+        BTypeNode bTypeNode=Btype();
+        VarDefNode varDefNode=VarDef();
+        List<Token> commas=null;
+        List<VarDefNode> varDefNodes=null;
+        Token semi=null;
+        while(tokens.get(currentTokenIndex).getType()==TokenType.COMMA){
+            commas.add(match(TokenType.COMMA));
+            varDefNodes.add(VarDef());
+        }
+        return new VarDeclNode(bTypeNode,varDefNode,commas,varDefNodes,semi);
+    }
+
+    private VarDefNode VarDef() {
+    }
+
+    private ConstExpNode ConstExp() {
+    }
+
+
+
+
+
     // FuncDef规则
-    private void funcDef() {
+    private FuncDefNode funcDef() {
         // 处理函数定义语句
         // ...
+        return null;
     }
 
     // MainFuncDef规则
-    private void mainFuncDef() {
-        match(TokenType.MAINFUNC);
+    private MainFuncDefNode mainFuncDef() {
+        match(TokenType.MAINTK);
         // 处理主函数定义语句
         // ...
+        return null;
     }
 
     // 匹配当前 front.Token 并返回
