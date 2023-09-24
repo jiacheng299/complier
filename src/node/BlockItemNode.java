@@ -9,12 +9,13 @@ public class BlockItemNode {
         this.stmtnode = stmtnode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if(declnode!=null){
             declnode.print();
         }
         else{
             stmtnode.print();
         }
-        System.out.println("BlockItemNode");
+        //System.out.println("<BlockItem>");
     }
 }

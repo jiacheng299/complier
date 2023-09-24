@@ -14,11 +14,12 @@ public class FuncFParamsNode {
         this.funcFParamsNodes = funcFParamsNodes;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         funcFParamsNodes.get(0).print();
         for (int i=1;i<funcFParamsNodes.size();i++) {
             System.out.println(commas.get(i-1).toString());
             funcFParamsNodes.get(i).print();
         }
-        System.out.println("FuncFParams");
+        System.out.println("<FuncFParams>");
     }
 }

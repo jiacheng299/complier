@@ -19,11 +19,12 @@ public class FuncDefNode {
         this.blockNode = blockNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         funcTypeNode.print();
         System.out.println(ident.toString());
         System.out.println(lparent.toString());
         funcFParamsNode.print();
         blockNode.print();
-        System.out.println("FuncDefNode");
+        System.out.println("<FuncDef>");
     }
 }

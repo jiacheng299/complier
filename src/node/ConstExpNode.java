@@ -7,7 +7,8 @@ public class ConstExpNode {
         this.addExpNode = addExpNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         addExpNode.print();
-        System.out.println("ConstExpNode");
+        System.out.println("<ConstExp>");
     }
 }

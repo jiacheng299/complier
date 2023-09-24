@@ -17,6 +17,7 @@ public class AddExpNode {
         this.mulExpNodes = mulExpNodes;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         mulExpNodes.get(0).print();
             for (int i=0;i<pluseOrminus.size();i++){
                 System.out.println("AddExp");
@@ -24,6 +25,6 @@ public class AddExpNode {
                 mulExpNodes.get(i+1).print();
             }
 
-        System.out.println("AddExp");
+        System.out.println("<AddExp>");
     }
 }

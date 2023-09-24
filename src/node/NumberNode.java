@@ -10,7 +10,8 @@ public class NumberNode {
         this.number = number;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(number.toString());
-        System.out.println("NumberNode");
+        System.out.println("<Number>");
     }
 }

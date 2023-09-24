@@ -16,12 +16,13 @@ public class LOrExpNode {
         this.ors = ors;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         lAndExpNodes.get(0).print();
         for (int i=0;i<ors.size();i++){
-            System.out.println("LorExpNode");
+            System.out.println("<LOrExp>");
             System.out.println(ors.get(i).toString());
             lAndExpNodes.get(i+1).print();
         }
-        System.out.println("LOrExpNode");
+        System.out.println("<LOrExp>");
     }
 }

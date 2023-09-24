@@ -14,11 +14,12 @@ public class FuncRParamsNode {
         this.expNodes = expNodes;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         expNodes.get(0).print();
         for (int i=0;i<commas.size();i++){
             System.out.println(commas.get(i).toString());
             expNodes.get(i+1).print();
         }
-        System.out.println("FuncRParams");
+        System.out.println("<FuncRParams>");
     }
 }

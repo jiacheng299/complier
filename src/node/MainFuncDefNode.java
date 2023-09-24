@@ -17,11 +17,12 @@ public class MainFuncDefNode {
         this.blockNode = block;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(inttk.toString());
         System.out.println(maintk.toString());
         System.out.println(lparent.toString());
         System.out.println(rparent.toString());
         blockNode.print();
-        System.out.println("MainFuncDefNode");
+        System.out.println("<MainFuncDef>");
     }
 }

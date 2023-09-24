@@ -12,6 +12,7 @@ public class CompUnitNode {
         this.mainFuncDefNode=mainFuncDefNode;
     }
     public void print() {
+        System.setOut(RedirectSystemOut.ps);
         for (DeclNode declNode : declNodes) {
             declNode.print();
         }
@@ -19,6 +20,6 @@ public class CompUnitNode {
             funcDefNode.print();
         }
         mainFuncDefNode.print();
-        System.out.println("CompUnit");
+        System.out.println("<CompUnit>");
     }
 }

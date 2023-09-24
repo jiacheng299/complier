@@ -21,6 +21,7 @@ public class VarDefNode {
         this.initValNode=initValNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
         for(Token lbrace:Lbraces){
             System.out.println(lbrace.toString());
@@ -35,6 +36,6 @@ public class VarDefNode {
             System.out.println(assign.toString());
             initValNode.print();
         }
-        System.out.println("VarDefNode");
+        System.out.println("<VarDef>");
     }
 }

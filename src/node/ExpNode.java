@@ -8,7 +8,8 @@ public class ExpNode {
         this.addExpNode = addExpNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         addExpNode.print();
-        System.out.println("ExpNode");
+        System.out.println("<Exp>");
     }
 }

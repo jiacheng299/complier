@@ -18,6 +18,7 @@ public class PrimaryExpNode {
         this.numberNode = numberNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if (lparent != null){
             System.out.println(lparent.toString());
             expNode.print();
@@ -28,5 +29,6 @@ public class PrimaryExpNode {
         else{
             numberNode.print();
         }
+        System.out.println("<PrimaryExp>");
     }
 }

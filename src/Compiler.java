@@ -2,6 +2,7 @@
 // 然后按 Enter 键。现在，您可以在代码中看到空格字符。
 
 import front.Lexer;
+import front.Parser;
 import front.Token;
 
 import java.io.*;
@@ -23,10 +24,15 @@ public class Compiler {
         Lexer lexer=new Lexer(content.toString());
         System.out.println(content);
         List<Token> words=lexer.tokenize();
+
+
         try (PrintWriter writer = new PrintWriter(new FileWriter("output.txt"))) {
             for (int i = 0; i < words.size(); i++) {
                 writer.println(words.get(i));
             }
         }
+        Parser parser=new Parser(words);
+        parser.parse();
+        parser.getEntrance().print();
     }
 }

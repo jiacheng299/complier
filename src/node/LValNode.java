@@ -18,11 +18,13 @@ public class LValNode {
         this.rbracks = rbracks;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
         for (int i=0;i< lbracks.size();i++){
             System.out.println(lbracks.get(i).toString());
             expNodes.get(i).print();
             System.out.println(rbracks.get(i).toString());
         }
+        System.out.println("<LVal>");
     }
 }

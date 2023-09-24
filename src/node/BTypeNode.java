@@ -8,6 +8,7 @@ public class BTypeNode {
         this.inttk=inttk;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(inttk.toString());
         //System.out.println("BType");
     }

@@ -21,6 +21,7 @@ public class FuncFParamNode {
         this.constExpNodes = constExpNodes;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
         if(lbracks.size() > 0){
             System.out.println(lbracks.get(0).toString());
@@ -31,6 +32,6 @@ public class FuncFParamNode {
                 System.out.println(rbracks.get(i).toString());
             }
         }
-        System.out.println("FuncFparamNode");
+        System.out.println("<FuncFparam>");
     }
 }

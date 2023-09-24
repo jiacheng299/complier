@@ -18,6 +18,7 @@ public class ConstInitValNode {
         this.Rbrace=Rbrace;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if(constExpNode!=null)  constExpNode.print();
         else {
             System.out.println(Lbrace.toString());
@@ -29,6 +30,6 @@ public class ConstInitValNode {
                 }
             }
         }
-        System.out.println("ConstInitValNode");
+        System.out.println("<ConstInitVal>");
     }
 }

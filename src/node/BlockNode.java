@@ -16,11 +16,12 @@ public class BlockNode {
         this.rbrace = rbrace;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(lbrace.toString());
         for (BlockItemNode node : blockItemNodes){
             node.print();
         }
         System.out.println(rbrace.toString());
-        System.out.println("BlockNode");
+        System.out.println("<Block>");
     }
 }

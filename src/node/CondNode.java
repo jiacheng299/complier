@@ -7,7 +7,8 @@ public class CondNode {
         this.lOrExpNode = lOrExpNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         lOrExpNode.print();
-        System.out.println("CondNode");
+        System.out.println("<Cond>");
     }
 }

@@ -14,6 +14,7 @@ public class UnaryOpNode {
         this.not = not;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if(this.plus!=null){
             System.out.println(plus.toString());
         } else if (this.minu != null) {
@@ -22,6 +23,6 @@ public class UnaryOpNode {
         else{
             System.out.println(not.toString());
         }
-        System.out.println("UnaryOpNode");
+        System.out.println("<UnaryOp>");
     }
 }

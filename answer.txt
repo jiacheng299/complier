@@ -1,70 +1,46 @@
 INTTK int
-IDENFR factorial
-LPARENT (
-INTTK int
-IDENFR n
-RPARENT )
-LBRACE {
-IFTK if
-LPARENT (
-IDENFR n
-LEQ <=
-INTCON 1
-RPARENT )
-LBRACE {
-RETURNTK return
-INTCON 1
-SEMICN ;
-RBRACE }
-ELSETK else
-LBRACE {
-RETURNTK return
-IDENFR n
-MULT *
-IDENFR factorial
-LPARENT (
-IDENFR n
-MINU -
-INTCON 1
-RPARENT )
-SEMICN ;
-RBRACE }
-RBRACE }
-INTTK int
 MAINTK main
 LPARENT (
 RPARENT )
 LBRACE {
 INTTK int
-IDENFR n
-ASSIGN =
-INTCON 5
+IDENFR c
+<VarDef>
 SEMICN ;
-INTTK int
-IDENFR result
+<VarDecl>
+IDENFR c
+<LVal>
 ASSIGN =
-IDENFR factorial
+GETINTTK getint
 LPARENT (
-IDENFR n
 RPARENT )
 SEMICN ;
+<Stmt>
 PRINTFTK printf
 LPARENT (
-STRCON "Factorial of %d is %d\n"
+STRCON "%d"
 COMMA ,
-IDENFR n
-COMMA ,
-IDENFR result
+IDENFR c
+<LVal>
+<PrimaryExp>
+<UnaryExp>
+<MulExp>
+<AddExp>
+<Exp>
 RPARENT )
 SEMICN ;
-PRINTFTK printf
-LPARENT (
-IDENFR a
-COMMA ,
-IDENFR b
-RPARENT )
-SEMICN ;
+<Stmt>
 RETURNTK return
-INTCON 0
+IDENFR c
+<LVal>
+<PrimaryExp>
+<UnaryExp>
+<MulExp>
+<AddExp>
+<Exp>
 SEMICN ;
+<Stmt>
 RBRACE }
+<Block>
+<MainFuncDef>
+<CompUnit>

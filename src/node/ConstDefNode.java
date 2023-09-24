@@ -20,6 +20,7 @@ public class ConstDefNode {
         this.constInitValNode=constInitValNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
         for (Token lbrack:Lbracks){
             System.out.println(lbrack.toString());
@@ -32,6 +33,6 @@ public class ConstDefNode {
         }
         System.out.println(assign.toString());
         constInitValNode.print();
-        System.out.println("ConstDefNode");
+        System.out.println("<ConstDef>");
     }
 }

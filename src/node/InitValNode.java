@@ -21,6 +21,7 @@ public class InitValNode {
     }
 
     public void print() {
+        System.setOut(RedirectSystemOut.ps);
         if (expNode!=null){
             expNode.print();
         }
@@ -34,6 +35,6 @@ public class InitValNode {
                 initValNodes.get(i).print();
             }
         }
-        System.out.println("InitValNode");
+        System.out.println("<InitVal>");
     }
 }

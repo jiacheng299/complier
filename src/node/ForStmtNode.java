@@ -13,9 +13,10 @@ public class ForStmtNode {
         this.expNode=expNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         lValNode.print();
         System.out.println(assign.toString());
         expNode.print();
-        System.out.println("ForStmtNode");
+        System.out.println("<ForStmt>");
     }
 }

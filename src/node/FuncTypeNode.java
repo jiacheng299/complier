@@ -11,12 +11,13 @@ public class FuncTypeNode {
         this.inttk = inttk;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if(voidtk!=null){
             System.out.println(voidtk.toString());
         }
         else{
             System.out.println(inttk.toString());
         }
-        System.out.println("FuncTypeNode");
+        System.out.println("<FuncType>");
     }
 }

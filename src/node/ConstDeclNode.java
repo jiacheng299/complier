@@ -19,15 +19,16 @@ public class ConstDeclNode {
         this.semiToken=semiToken;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         System.out.println(constToken.toString());
         bTypeNode.print();
         constDefNode.print();
         for (Token comma:commas){
-            comma.print();
+            System.out.println(comma.toString());
         }
         for(ConstDefNode constDefNode1:constDefNodes){
             constDefNode1.print();
         }
-        System.out.println("ConstDeclNode");
+        System.out.println("<ConstDecl>");
     }
 }

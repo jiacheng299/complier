@@ -16,12 +16,13 @@ public class RelExpNode {
     }
 
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         addExpNodes.get(0).print();
         for (int i=0;i<ops.size();i++){
-            System.out.println("RelExpNode");
+            System.out.println("<RelExp>");
             System.out.println(ops.get(i).toString());
             addExpNodes.get(i+1).print();
         }
-        System.out.println("RelExpNode");
+        System.out.println("<RelExp>");
     }
 }

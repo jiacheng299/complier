@@ -8,12 +8,13 @@ public class DeclNode {
         this.varDeclNode=varDeclNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if(constDeclNode!=null){
             constDeclNode.print();
         }
         else{
             varDeclNode.print();
         }
-        System.out.println("DeclNode");
+       // System.out.println("DeclNode");
     }
 }

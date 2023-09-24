@@ -18,6 +18,7 @@ public class VarDeclNode {
         this.semi=semi;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         bTypeNode.print();
         varDefNode.print();
         for (Token comma:commas){
@@ -26,7 +27,7 @@ public class VarDeclNode {
         for(VarDefNode varDefNode1:varDefNodes){
             varDefNode1.print();
         }
-        System.out.println(semi);
-        System.out.println("VarDeclNode");
+        System.out.println(semi.toString());
+        System.out.println("<VarDecl>");
     }
 }

@@ -22,6 +22,7 @@ public class UnaryExpNode {
         this.unaryExpNode = unaryExpNode;
     }
     public void print(){
+        System.setOut(RedirectSystemOut.ps);
         if (primaryExpNode!=null){
             primaryExpNode.print();
         } else if (unaryOpNode!=null) {
@@ -34,6 +35,6 @@ public class UnaryExpNode {
             if(funcRParamsNode!=null) funcRParamsNode.print();
             System.out.println(rparent.toString());
         }
-        System.out.println("UnartExpNode");
+        System.out.println("<UnaryExp>");
     }
 }
