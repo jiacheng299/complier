@@ -18,7 +18,7 @@ public class LAndExpNode {
         System.setOut(RedirectSystemOut.ps);
         eqExpNodes.get(0).print();
         for (int i=0;i<ands.size();i++){
-            System.out.println("LAndExpNode");
+            System.out.println("<LAndExp>");
             System.out.println(ands.get(i).toString());
             eqExpNodes.get(i+1).print();
         }

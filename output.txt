@@ -4,7 +4,7 @@ IDENFR func1
 LPARENT (
 INTTK int
 IDENFR a
-<FuncFParam>
+<FuncFparam>
 <FuncFParams>
 RPARENT )
 LBRACE {

@@ -23,14 +23,10 @@ public class VarDefNode {
     public void print(){
         System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
-        for(Token lbrace:Lbraces){
-            System.out.println(lbrace.toString());
-        }
-        for (ConstExpNode constExpNode:constExpNodes){
-            constExpNode.print();
-        }
-        for(Token rbrace:Rbraces){
-            System.out.println(rbrace.toString());
+        for (int i=0;i<Lbraces.size();i++){
+            System.out.println(Lbraces.get(i).toString());
+            constExpNodes.get(i).print();
+            System.out.println(Rbraces.get(i).toString());
         }
         if(assign!=null){
             System.out.println(assign.toString());

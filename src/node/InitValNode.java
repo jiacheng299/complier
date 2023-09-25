@@ -34,6 +34,7 @@ public class InitValNode {
                 System.out.println(commas.get(i-1).toString());
                 initValNodes.get(i).print();
             }
+            System.out.println(rbrace.toString());
         }
         System.out.println("<InitVal>");
     }

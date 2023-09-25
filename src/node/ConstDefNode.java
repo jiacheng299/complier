@@ -22,14 +22,10 @@ public class ConstDefNode {
     public void print(){
         System.setOut(RedirectSystemOut.ps);
         System.out.println(ident.toString());
-        for (Token lbrack:Lbracks){
-            System.out.println(lbrack.toString());
-        }
-        for(ConstExpNode constExpNode:constExpNodes){
-            constExpNode.print();
-        }
-        for (Token rbrack:Rbracks){
-            System.out.println(rbrack.toString());
+        for (int i=0;i<Lbracks.size();i++){
+            System.out.println(Lbracks.get(i).toString());
+            constExpNodes.get(i).print();
+            System.out.println(Rbracks.get(i).toString());
         }
         System.out.println(assign.toString());
         constInitValNode.print();

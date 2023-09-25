@@ -55,6 +55,7 @@ public class StmtNode {
     }
     //| Block
     public StmtNode(StmtType stmtType,BlockNode blockNode){
+        this.stmtType=stmtType;
         this.blockNode = blockNode;
     }
     //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]

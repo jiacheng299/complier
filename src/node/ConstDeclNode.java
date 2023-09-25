@@ -23,12 +23,11 @@ public class ConstDeclNode {
         System.out.println(constToken.toString());
         bTypeNode.print();
         constDefNode.print();
-        for (Token comma:commas){
-            System.out.println(comma.toString());
+        for (int i=0;i<commas.size();i++){
+            System.out.println(commas.get(i).toString());
+            constDefNodes.get(i).print();
         }
-        for(ConstDefNode constDefNode1:constDefNodes){
-            constDefNode1.print();
-        }
+        System.out.println(semiToken.toString());
         System.out.println("<ConstDecl>");
     }
 }

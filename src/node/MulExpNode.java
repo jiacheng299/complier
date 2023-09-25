@@ -20,7 +20,7 @@ public class MulExpNode {
         System.setOut(RedirectSystemOut.ps);
         unaryExpNodes.get(0).print();
         for (int i=0;i<ops.size();i++){
-            System.out.println("MulExpNode");
+            System.out.println("<MulExp>");
             System.out.println(ops.get(i).toString());
             unaryExpNodes.get(i+1).print();
         }

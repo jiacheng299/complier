@@ -20,7 +20,7 @@ public class EqExpNode {
         System.setOut(RedirectSystemOut.ps);
         relExpNode.get(0).print();
         for (int i=0;i<eqlOrNeqs.size();i++){
-            System.out.println("EqExpNode");
+            System.out.println("<EqExp>");
             System.out.println(eqlOrNeqs.get(i).toString());
             relExpNode.get(i+1).print();
         }

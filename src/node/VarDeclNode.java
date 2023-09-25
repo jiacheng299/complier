@@ -21,11 +21,9 @@ public class VarDeclNode {
         System.setOut(RedirectSystemOut.ps);
         bTypeNode.print();
         varDefNode.print();
-        for (Token comma:commas){
-            System.out.println(comma.toString());
-        }
-        for(VarDefNode varDefNode1:varDefNodes){
-            varDefNode1.print();
+        for (int i=0;i<commas.size();i++){
+            System.out.println(commas.get(i).toString());
+            varDefNodes.get(i).print();
         }
         System.out.println(semi.toString());
         System.out.println("<VarDecl>");

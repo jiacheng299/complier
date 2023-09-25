@@ -31,9 +31,9 @@ public class Parser {
         List<FuncDefNode>funcDefNodes=new ArrayList<>();
         MainFuncDefNode mainFuncDefNode=null;
         while (hasNextToken()) {
-            if (tokens.get(currentTokenIndex+2).getType()!=TokenType.LPARENT&&getCurrentToken().getType()!=TokenType.INTTK) {
+            if (getCurrentToken().getType()==TokenType.CONSTTK||(getCurrentToken().getType()==TokenType.INTTK&&tokens.get(currentTokenIndex+2).getType()!=TokenType.LPARENT)) {
                 declNodes.add(decl());
-            } else if (getCurrentToken().getType()!=TokenType.INTTK) {
+            } else if (getCurrentToken().getType()==TokenType.VOIDTK||(getCurrentToken().getType()==TokenType.INTTK&&tokens.get(currentTokenIndex+1).getType()==TokenType.IDENFR)) {
                 funcDefNodes.add(funcDef());
             } else {
                 break;
@@ -300,7 +300,7 @@ public class Parser {
         List<StmtNode> stmtNodes = new ArrayList<>();
 
         //Lval
-        if (getCurrentToken().getType()==TokenType.IDENFR){
+        if (getCurrentToken().getType()==TokenType.IDENFR&&(tokens.get(currentTokenIndex+1).getType()==TokenType.ASSIGN||tokens.get(currentTokenIndex+1).getType()==TokenType.LBRACK)){
             lvalNode=LVal();
             assign=match(TokenType.ASSIGN);
             //| LVal '=' 'getint''('')'';'
@@ -324,6 +324,7 @@ public class Parser {
             }
             else{
                 expNode=Exp();
+                semis.add(match(TokenType.SEMICN));
             }
             return new StmtNode(StmtNode.StmtType.Exp,expNode,semis);
         }else if (getCurrentToken().getType()==TokenType.LBRACE) {
@@ -463,7 +464,7 @@ public class Parser {
         Token rparent=null;
         UnaryOpNode unaryOp=null;
         UnaryExpNode unaryExp=null;
-        if(getCurrentToken().getType()==TokenType.IDENFR&&getCurrentToken().getType()==TokenType.LPARENT){
+        if(getCurrentToken().getType()==TokenType.IDENFR&&tokens.get(currentTokenIndex+1).getType()==TokenType.LPARENT){
             ident=match(TokenType.IDENFR);
             lparent=match(TokenType.LPARENT);
             if(getCurrentToken().getType()!=TokenType.RPARENT){

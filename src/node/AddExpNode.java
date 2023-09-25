@@ -20,7 +20,7 @@ public class AddExpNode {
         System.setOut(RedirectSystemOut.ps);
         mulExpNodes.get(0).print();
             for (int i=0;i<pluseOrminus.size();i++){
-                System.out.println("AddExp");
+                System.out.println("<AddExp>");
                 System.out.println(pluseOrminus.get(i).toString());
                 mulExpNodes.get(i+1).print();
             }

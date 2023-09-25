@@ -23,7 +23,8 @@ public class FuncDefNode {
         funcTypeNode.print();
         System.out.println(ident.toString());
         System.out.println(lparent.toString());
-        funcFParamsNode.print();
+        if (funcFParamsNode!=null) funcFParamsNode.print();
+        System.out.println(rparent.toString());
         blockNode.print();
         System.out.println("<FuncDef>");
     }

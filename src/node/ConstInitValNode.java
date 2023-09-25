@@ -29,6 +29,7 @@ public class ConstInitValNode {
                     constInitValNodes.get(i).print();
                 }
             }
+            System.out.println(Rbrace.toString());
         }
         System.out.println("<ConstInitVal>");
     }
