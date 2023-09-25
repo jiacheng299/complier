@@ -3,12 +3,13 @@ package front;
 public class Token {
     private TokenType type;
     private String value;
-
-    public Token(TokenType type, String value) {
+    private Integer lineNumber;
+    public Token(TokenType type, String value,Integer lineNumber) {
+        this.lineNumber=lineNumber;
         this.type = type;
         this.value = value;
     }
-
+    public Integer getLineNumber() {return lineNumber;}
     public TokenType getType() {
         return type;
     }

@@ -2,7 +2,7 @@ package front;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import error.*;
 class Constants {
     public static final List<String> Keyword;
 
@@ -83,7 +83,7 @@ public class Lexer {
     private String input;
     private int position;
     private int flag=0;
-    private int lineNumber=1;
+    public int lineNumber=1;
     public Lexer(String input) {
         this.input = input;
         this.position = 0;
@@ -329,139 +329,139 @@ public class Lexer {
     private Token scanNot(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.NOT,String.valueOf(temp));
+        return new Token(TokenType.NOT,String.valueOf(temp),lineNumber);
     }
     //读取&&
     private Token scanAnd(){
         String temp="&&";
         position+=2;
-        return new Token(TokenType.AND,temp);
+        return new Token(TokenType.AND,temp,lineNumber);
     }
     //读取||
     private Token scanOr(){
         String temp="||";
         position+=2;
-        return new Token(TokenType.OR,temp);
+        return new Token(TokenType.OR,temp,lineNumber);
     }
     //读取+
     private Token scanPlus(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.PLUS,String.valueOf(temp));
+        return new Token(TokenType.PLUS,String.valueOf(temp),lineNumber);
     }
     //读取-
     private Token scanMinu(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.MINU,String.valueOf(temp));
+        return new Token(TokenType.MINU,String.valueOf(temp),lineNumber);
     }
     //读取*
     private Token scanMult(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.MULT,String.valueOf(temp));
+        return new Token(TokenType.MULT,String.valueOf(temp),lineNumber);
     }
     //读取/
     private Token scanDiv(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.DIV,String.valueOf(temp));
+        return new Token(TokenType.DIV,String.valueOf(temp),lineNumber);
     }
     //读取%
     private Token scanMod(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.MOD,String.valueOf(temp));
+        return new Token(TokenType.MOD,String.valueOf(temp),lineNumber);
     }
     //读取<
     private Token scanLss(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.LSS,String.valueOf(temp));
+        return new Token(TokenType.LSS,String.valueOf(temp),lineNumber);
     }
     //读取<=
     private Token scanLeq(){
         String temp="<=";
         position+=2;
-        return new Token(TokenType.LEQ,temp);
+        return new Token(TokenType.LEQ,temp,lineNumber);
     }
     //读取>
     private Token scanGre(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.GRE,String.valueOf(temp));
+        return new Token(TokenType.GRE,String.valueOf(temp),lineNumber);
     }
     //读取>=
     private Token scanGeq(){
         String temp=">=";
         position+=2;
-        return new Token(TokenType.GEQ,temp);
+        return new Token(TokenType.GEQ,temp,lineNumber);
     }
     //读取==
     private Token scanEql(){
         String temp="==";
         position+=2;
-        return new Token(TokenType.EQL,temp);
+        return new Token(TokenType.EQL,temp,lineNumber);
     }
     //读取!=
     private Token scanNeq(){
         String temp="!=";
         position+=2;
-        return new Token(TokenType.NEQ,temp);
+        return new Token(TokenType.NEQ,temp,lineNumber);
     }
     //读取=
     private Token scanAssign(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.ASSIGN,String.valueOf(temp));
+        return new Token(TokenType.ASSIGN,String.valueOf(temp),lineNumber);
     }
     //读;
     private Token scanSemi(){
         char semi=input.charAt(position);
         position++;
-        return new Token(TokenType.SEMICN,String.valueOf(semi));
+        return new Token(TokenType.SEMICN,String.valueOf(semi),lineNumber);
     }
     //读,
     private Token scanComma(){
         char comma=input.charAt(position);
         position++;
-        return new Token(TokenType.COMMA,String.valueOf(comma));
+        return new Token(TokenType.COMMA,String.valueOf(comma),lineNumber);
     }
     //读(
     private Token scanLpar(){
         char parens=input.charAt(position);
         position++;
-        return new Token(TokenType.LPARENT,String.valueOf(parens));
+        return new Token(TokenType.LPARENT,String.valueOf(parens),lineNumber);
     }
     //读)
     private Token scanRpar(){
         char parens=input.charAt(position);
         position++;
-        return new Token(TokenType.RPARENT,String.valueOf(parens));
+        return new Token(TokenType.RPARENT,String.valueOf(parens),lineNumber);
     }
     //读取[
     private Token scanLbrack(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.LBRACK,String.valueOf(temp));
+        return new Token(TokenType.LBRACK,String.valueOf(temp),lineNumber);
     }
     //读取]
     private Token scanRbrack(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.RBRACK,String.valueOf(temp));
+        return new Token(TokenType.RBRACK,String.valueOf(temp),lineNumber);
     }
     //读取{
     private Token scanLbrace(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.LBRACE,String.valueOf(temp));
+        return new Token(TokenType.LBRACE,String.valueOf(temp),lineNumber);
     }
     //读取}
     private Token scanRbrace(){
         char temp=input.charAt(position);
         position++;
-        return new Token(TokenType.RBRACE,String.valueOf(temp));
+        return new Token(TokenType.RBRACE,String.valueOf(temp),lineNumber);
     }
     private Token scanFormatString(){
         StringBuilder formatString=new StringBuilder();
@@ -469,6 +469,14 @@ public class Lexer {
         position++;
         char currentChar=input.charAt(position);
         while(currentChar!='"'){
+            if (currentChar==92&&input.charAt(position+1)!='n'){
+                System.out.println("a类错误");
+                error.addError(error.errorType.a,lineNumber);
+            }
+            if(currentChar!='%'&&currentChar!='d'&&currentChar!=32&&currentChar!=33&&currentChar>126&&currentChar<40){
+                System.out.println("a类错误");
+                error.addError(error.errorType.a,lineNumber);
+            }
             formatString.append(currentChar);
             position++;
             if(position>=input.length()){
@@ -479,7 +487,7 @@ public class Lexer {
         formatString.append(currentChar);
         String temp=formatString.toString();
         flag=0;
-        return new Token(TokenType.STRCON,temp);
+        return new Token(TokenType.STRCON,temp,lineNumber);
     }
     //读字符串
     private Token scanString() {
@@ -499,36 +507,36 @@ public class Lexer {
         //如果是保留字
         if(Constants.Keyword.contains(temp)){
             if(temp.equals("main")){
-                return new Token(TokenType.MAINTK, temp);
+                return new Token(TokenType.MAINTK, temp,lineNumber);
             } else if (temp.equals("const")) {
-                return new Token(TokenType.CONSTTK, temp);
+                return new Token(TokenType.CONSTTK, temp,lineNumber);
             } else if (temp.equals("int")) {
-                return new Token(TokenType.INTTK, temp);
+                return new Token(TokenType.INTTK, temp,lineNumber);
             } else if (temp.equals("break")) {
-                return new Token(TokenType.BREAKTK, temp);
+                return new Token(TokenType.BREAKTK, temp,lineNumber);
             } else if (temp.equals("continue")) {
-                return new Token(TokenType.CONTINUETK, temp);
+                return new Token(TokenType.CONTINUETK, temp,lineNumber);
             } else if (temp.equals("if")) {
-                return new Token(TokenType.IFTK, temp);
+                return new Token(TokenType.IFTK, temp,lineNumber);
             } else if (temp.equals("else")) {
-                return new Token(TokenType.ELSETK, temp);
+                return new Token(TokenType.ELSETK, temp,lineNumber);
             } else if (temp.equals("for")) {
-                return new Token(TokenType.FORTK, temp);
+                return new Token(TokenType.FORTK, temp,lineNumber);
             } else if (temp.equals("getint")) {
-                return new Token(TokenType.GETINTTK, temp);
+                return new Token(TokenType.GETINTTK, temp,lineNumber);
             } else if (temp.equals("printf")) {
                 flag=1;
-                return new Token(TokenType.PRINTFTK, temp);
+                return new Token(TokenType.PRINTFTK, temp,lineNumber);
             } else if (temp.equals("return")) {
-                return new Token(TokenType.RETURNTK, temp);
+                return new Token(TokenType.RETURNTK, temp,lineNumber);
             } else if (temp.equals("void")) {
-                return new Token(TokenType.VOIDTK, temp);
+                return new Token(TokenType.VOIDTK, temp,lineNumber);
             }
             return null;
         }
         //否则就是标识符
         else{
-            return new Token(TokenType.IDENFR, temp);
+            return new Token(TokenType.IDENFR, temp,lineNumber);
         }
     }
     //读数字串
@@ -545,7 +553,7 @@ public class Lexer {
             currentChar = input.charAt(position);
         }
 
-        return new Token(TokenType.INTCON, number.toString());
+        return new Token(TokenType.INTCON, number.toString(),lineNumber);
     }
 
 }

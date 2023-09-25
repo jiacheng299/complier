@@ -4,7 +4,7 @@ import node.*;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import error.*;
 public class Parser {
     private List<Token> tokens;
     private int currentTokenIndex;
@@ -621,7 +621,17 @@ public class Parser {
         if (currentToken.getType() == type) {
             advance();
             return currentToken;
-        } else {
+        }else if (type==TokenType.SEMICN){
+            error.addError(error.errorType.i,tokens.get(currentTokenIndex-1).getLineNumber());
+            return currentToken;
+        } else if (type==TokenType.RPARENT) {
+            error.addError(error.errorType.j,tokens.get(currentTokenIndex-1).getLineNumber());
+            return currentToken;
+        }else if (type == TokenType.LBRACK){
+            error.addError(error.errorType.k,tokens.get(currentTokenIndex-1).getLineNumber());
+            return currentToken;
+        }
+        else {
             throw new RuntimeException("Syntax error: Expected " + type + " but found " + currentToken.getType());
         }
     }
