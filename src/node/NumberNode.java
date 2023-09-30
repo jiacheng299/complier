@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //Number → IntConst
 public class NumberNode {
@@ -13,5 +13,9 @@ public class NumberNode {
         System.setOut(RedirectSystemOut.ps);
         System.out.println(number.toString());
         System.out.println("<Number>");
+    }
+
+    public Token getNumber() {
+        return number;
     }
 }

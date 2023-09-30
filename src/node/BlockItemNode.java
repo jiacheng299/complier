@@ -18,4 +18,12 @@ public class BlockItemNode {
         }
         //System.out.println("<BlockItem>");
     }
+
+    public DeclNode getDeclnode() {
+        return declnode;
+    }
+
+    public StmtNode getStmtnode() {
+        return stmtnode;
+    }
 }

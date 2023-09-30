@@ -11,4 +11,8 @@ public class ConstExpNode {
         addExpNode.print();
         System.out.println("<ConstExp>");
     }
+
+    public AddExpNode getAddExpNode() {
+        return addExpNode;
+    }
 }

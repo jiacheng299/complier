@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -21,5 +21,13 @@ public class FuncRParamsNode {
             expNodes.get(i+1).print();
         }
         System.out.println("<FuncRParams>");
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<ExpNode> getExpNodes() {
+        return expNodes;
     }
 }

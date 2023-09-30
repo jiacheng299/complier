@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -33,5 +33,29 @@ public class VarDefNode {
             initValNode.print();
         }
         System.out.println("<VarDef>");
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public List<Token> getLbraces() {
+        return Lbraces;
+    }
+
+    public List<ConstExpNode> getConstExpNodes() {
+        return constExpNodes;
+    }
+
+    public List<Token> getRbraces() {
+        return Rbraces;
+    }
+
+    public Token getAssign() {
+        return assign;
+    }
+
+    public InitValNode getInitValNode() {
+        return initValNode;
     }
 }

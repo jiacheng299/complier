@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -23,5 +23,17 @@ public class BlockNode {
         }
         System.out.println(rbrace.toString());
         System.out.println("<Block>");
+    }
+
+    public Token getLbrace() {
+        return lbrace;
+    }
+
+    public List<BlockItemNode> getBlockItemNodes() {
+        return blockItemNodes;
+    }
+
+    public Token getRbrace() {
+        return rbrace;
     }
 }

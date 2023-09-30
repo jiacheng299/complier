@@ -3,7 +3,7 @@
 
 import front.Lexer;
 import front.Parser;
-import front.Token;
+import Token.Token;
 
 import java.io.*;
 import java.util.List;
@@ -26,11 +26,11 @@ public class Compiler {
         List<Token> words=lexer.tokenize();
 
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
-            for (int i = 0; i < words.size(); i++) {
-                writer.println(words.get(i));
-            }
-        }
+//        try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
+//            for (int i = 0; i < words.size(); i++) {
+//                writer.println(words.get(i));
+//            }
+//        }
         Parser parser=new Parser(words);
         parser.parse();
         parser.getEntrance().print();

@@ -1,5 +1,5 @@
 package node;
-import front.*;
+import Token.Token;
 
 import java.util.List;
 
@@ -32,5 +32,25 @@ public class ConstInitValNode {
             System.out.println(Rbrace.toString());
         }
         System.out.println("<ConstInitVal>");
+    }
+
+    public ConstExpNode getConstExpNode() {
+        return constExpNode;
+    }
+
+    public Token getLbrace() {
+        return Lbrace;
+    }
+
+    public List<ConstInitValNode> getConstInitValNodes() {
+        return constInitValNodes;
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public Token getRbrace() {
+        return Rbrace;
     }
 }

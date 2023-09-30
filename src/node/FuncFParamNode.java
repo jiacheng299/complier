@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -34,5 +34,25 @@ public class FuncFParamNode {
             }
         }
         System.out.println("<FuncFParam>");
+    }
+
+    public BTypeNode getBtypenode() {
+        return btypenode;
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public List<Token> getLbracks() {
+        return lbracks;
+    }
+
+    public List<Token> getRbracks() {
+        return rbracks;
+    }
+
+    public List<ConstExpNode> getConstExpNodes() {
+        return constExpNodes;
     }
 }

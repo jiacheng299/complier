@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -26,5 +26,12 @@ public class AddExpNode {
             }
 
         System.out.println("<AddExp>");
+    }
+    public List<Token> getPluseOrminus() {
+        return pluseOrminus;
+    }
+
+    public List<MulExpNode> getMulExpNodes() {
+        return mulExpNodes;
     }
 }

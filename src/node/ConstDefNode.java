@@ -1,5 +1,5 @@
 package node;
-import front.*;
+import Token.Token;
 
 import java.util.List;
 
@@ -30,5 +30,29 @@ public class ConstDefNode {
         System.out.println(assign.toString());
         constInitValNode.print();
         System.out.println("<ConstDef>");
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public List<Token> getLbracks() {
+        return Lbracks;
+    }
+
+    public List<ConstExpNode> getConstExpNodes() {
+        return constExpNodes;
+    }
+
+    public List<Token> getRbracks() {
+        return Rbracks;
+    }
+
+    public Token getAssign() {
+        return assign;
+    }
+
+    public ConstInitValNode getConstInitValNode() {
+        return constInitValNode;
     }
 }

@@ -11,4 +11,8 @@ public class CondNode {
         lOrExpNode.print();
         System.out.println("<Cond>");
     }
+
+    public LOrExpNode getlOrExpNode() {
+        return lOrExpNode;
+    }
 }

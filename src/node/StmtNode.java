@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -179,5 +179,93 @@ public class StmtNode {
             System.out.println(semis.get(0).toString());
         }
         System.out.println("<Stmt>");
+    }
+
+    public LValNode getLvalnode() {
+        return lvalnode;
+    }
+
+    public Token getAssign() {
+        return assign;
+    }
+
+    public ExpNode getExpNode() {
+        return expNode;
+    }
+
+    public List<Token> getSemis() {
+        return semis;
+    }
+
+    public BlockNode getBlockNode() {
+        return blockNode;
+    }
+
+    public Token getIftk() {
+        return iftk;
+    }
+
+    public Token getLparent() {
+        return lparent;
+    }
+
+    public Token getRparent() {
+        return rparent;
+    }
+
+    public CondNode getCondNode() {
+        return condNode;
+    }
+
+    public List<StmtNode> getStmtNodes() {
+        return stmtNodes;
+    }
+
+    public Token getElsetk() {
+        return elsetk;
+    }
+
+    public Token getFortk() {
+        return fortk;
+    }
+
+    public ForStmtNode getForStmt1() {
+        return forStmt1;
+    }
+
+    public ForStmtNode getForStmt2() {
+        return forStmt2;
+    }
+
+    public Token getBreaktkOrcontinuetk() {
+        return breaktkOrcontinuetk;
+    }
+
+    public Token getReturntk() {
+        return returntk;
+    }
+
+    public Token getGetinttk() {
+        return getinttk;
+    }
+
+    public Token getPrintftk() {
+        return printftk;
+    }
+
+    public Token getFormatStringtk() {
+        return formatStringtk;
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<ExpNode> getExpNodes() {
+        return expNodes;
+    }
+
+    public StmtType getStmtType() {
+        return stmtType;
     }
 }

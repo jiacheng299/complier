@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')'| UnaryOp UnaryExp
 public class UnaryExpNode {
@@ -36,5 +36,33 @@ public class UnaryExpNode {
             System.out.println(rparent.toString());
         }
         System.out.println("<UnaryExp>");
+    }
+
+    public PrimaryExpNode getPrimaryExpNode() {
+        return primaryExpNode;
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public Token getLparent() {
+        return lparent;
+    }
+
+    public FuncRParamsNode getFuncRParamsNode() {
+        return funcRParamsNode;
+    }
+
+    public Token getRparent() {
+        return rparent;
+    }
+
+    public UnaryOpNode getUnaryOpNode() {
+        return unaryOpNode;
+    }
+
+    public UnaryExpNode getUnaryExpNode() {
+        return unaryExpNode;
     }
 }

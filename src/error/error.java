@@ -6,7 +6,7 @@ import java.util.List;
 public class error {
     private errorType type;
     private Integer errorLine;
-    public static List<error>errorList=new ArrayList<error>();
+    private static List<error>errorList=new ArrayList<error>();
     public error(error.errorType type, Integer errorLine) {
         this.type = type;
         this.errorLine = errorLine;
@@ -15,7 +15,7 @@ public class error {
         errorList.add(new error(type, errorLine));
     }
     public enum errorType{
-        a,i,j,k;
+        a,b,c,d,e,f,g,h,i,j,k,l,m;
     }
 
 

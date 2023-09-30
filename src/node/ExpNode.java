@@ -12,4 +12,8 @@ public class ExpNode {
         addExpNode.print();
         System.out.println("<Exp>");
     }
+
+    public AddExpNode getAddExpNode() {
+        return addExpNode;
+    }
 }

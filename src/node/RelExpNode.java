@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -24,5 +24,13 @@ public class RelExpNode {
             addExpNodes.get(i+1).print();
         }
         System.out.println("<RelExp>");
+    }
+
+    public List<AddExpNode> getAddExpNodes() {
+        return addExpNodes;
+    }
+
+    public List<Token> getOps() {
+        return ops;
     }
 }

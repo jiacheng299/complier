@@ -1,5 +1,5 @@
 package node;
-import front.*;
+import Token.Token;
 
 import java.util.List;
 //ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
@@ -29,5 +29,29 @@ public class ConstDeclNode {
         }
         System.out.println(semiToken.toString());
         System.out.println("<ConstDecl>");
+    }
+
+    public Token getConstToken() {
+        return constToken;
+    }
+
+    public BTypeNode getbTypeNode() {
+        return bTypeNode;
+    }
+
+    public ConstDefNode getConstDefNode() {
+        return constDefNode;
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<ConstDefNode> getConstDefNodes() {
+        return constDefNodes;
+    }
+
+    public Token getSemiToken() {
+        return semiToken;
     }
 }

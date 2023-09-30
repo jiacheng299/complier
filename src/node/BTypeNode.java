@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 //BType → 'int'
 public class BTypeNode {
     private Token inttk;
@@ -11,5 +11,9 @@ public class BTypeNode {
         System.setOut(RedirectSystemOut.ps);
         System.out.println(inttk.toString());
         //System.out.println("BType");
+    }
+
+    public Token getInttk() {
+        return inttk;
     }
 }

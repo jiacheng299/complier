@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
 public class FuncDefNode {
@@ -27,5 +27,29 @@ public class FuncDefNode {
         System.out.println(rparent.toString());
         blockNode.print();
         System.out.println("<FuncDef>");
+    }
+
+    public FuncTypeNode getFuncTypeNode() {
+        return funcTypeNode;
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public Token getLparent() {
+        return lparent;
+    }
+
+    public FuncFParamsNode getFuncFParamsNode() {
+        return funcFParamsNode;
+    }
+
+    public Token getRparent() {
+        return rparent;
+    }
+
+    public BlockNode getBlockNode() {
+        return blockNode;
     }
 }

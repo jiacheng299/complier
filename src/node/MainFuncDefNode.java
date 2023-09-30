@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 // MainFuncDef → 'int' 'main' '(' ')' Block
 public class MainFuncDefNode {
@@ -24,5 +24,25 @@ public class MainFuncDefNode {
         System.out.println(rparent.toString());
         blockNode.print();
         System.out.println("<MainFuncDef>");
+    }
+
+    public Token getInttk() {
+        return inttk;
+    }
+
+    public Token getMaintk() {
+        return maintk;
+    }
+
+    public Token getLparent() {
+        return lparent;
+    }
+
+    public Token getRparent() {
+        return rparent;
+    }
+
+    public BlockNode getBlockNode() {
+        return blockNode;
     }
 }

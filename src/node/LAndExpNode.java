@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -23,5 +23,13 @@ public class LAndExpNode {
             eqExpNodes.get(i+1).print();
         }
         System.out.println("<LAndExp>");
+    }
+
+    public List<EqExpNode> getEqExpNodes() {
+        return eqExpNodes;
+    }
+
+    public List<Token> getAnds() {
+        return ands;
     }
 }

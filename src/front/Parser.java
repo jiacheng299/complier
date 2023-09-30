@@ -1,5 +1,7 @@
 package front;
 
+import Token.Token;
+import Token.TokenType;
 import node.*;
 
 import java.util.ArrayList;
@@ -376,7 +378,7 @@ public class Parser {
         }else if (getCurrentToken().getType()==TokenType.RETURNTK) {
             //| 'return' [Exp] ';'
             returntk=match(TokenType.RETURNTK);
-            if(getCurrentToken().getType()!=TokenType.SEMICN){
+            if(getCurrentToken().getType()!= TokenType.SEMICN){
                 expNode=Exp();
             }
             semis.add(match(TokenType.SEMICN));
@@ -615,7 +617,7 @@ public class Parser {
     // MainFuncDef规则
 
 
-    // 匹配当前 front.Token 并返回
+    // 匹配当前 Token.Token 并返回
     private Token match(TokenType type) {
         Token currentToken = getCurrentToken();
         if (currentToken.getType() == type) {
@@ -636,17 +638,17 @@ public class Parser {
         }
     }
 
-    // 获取当前 front.Token
+    // 获取当前 Token.Token
     private Token getCurrentToken() {
         return tokens.get(currentTokenIndex);
     }
 
-    // 是否还有下一个 front.Token
+    // 是否还有下一个 Token.Token
     private boolean hasNextToken() {
         return currentTokenIndex < tokens.size();
     }
 
-    // 前进到下一个 front.Token
+    // 前进到下一个 Token.Token
     private void advance() {
         currentTokenIndex++;
     }

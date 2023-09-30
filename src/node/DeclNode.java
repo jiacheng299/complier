@@ -17,4 +17,12 @@ public class DeclNode {
         }
        // System.out.println("DeclNode");
     }
+
+    public ConstDeclNode getConstDeclNode() {
+        return constDeclNode;
+    }
+
+    public VarDeclNode getVarDeclNode() {
+        return varDeclNode;
+    }
 }

@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //FuncType → 'void' | 'int'
 public class FuncTypeNode {
@@ -19,5 +19,13 @@ public class FuncTypeNode {
             System.out.println(inttk.toString());
         }
         System.out.println("<FuncType>");
+    }
+
+    public Token getVoidtk() {
+        return voidtk;
+    }
+
+    public Token getInttk() {
+        return inttk;
     }
 }

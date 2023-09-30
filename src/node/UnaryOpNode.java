@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //UnaryOp → '+' | '−' | '!'
 public class UnaryOpNode {
@@ -24,5 +24,17 @@ public class UnaryOpNode {
             System.out.println(not.toString());
         }
         System.out.println("<UnaryOp>");
+    }
+
+    public Token getPlus() {
+        return plus;
+    }
+
+    public Token getMinu() {
+        return minu;
+    }
+
+    public Token getNot() {
+        return not;
     }
 }

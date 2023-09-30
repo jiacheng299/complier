@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //ForStmt → LVal '=' Exp
 public class ForStmtNode {
@@ -18,5 +18,17 @@ public class ForStmtNode {
         System.out.println(assign.toString());
         expNode.print();
         System.out.println("<ForStmt>");
+    }
+
+    public LValNode getlValNode() {
+        return lValNode;
+    }
+
+    public Token getAssign() {
+        return assign;
+    }
+
+    public ExpNode getExpNode() {
+        return expNode;
     }
 }

@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -37,5 +37,25 @@ public class InitValNode {
             System.out.println(rbrace.toString());
         }
         System.out.println("<InitVal>");
+    }
+
+    public ExpNode getExpNode() {
+        return expNode;
+    }
+
+    public Token getLbrace() {
+        return lbrace;
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<InitValNode> getInitValNodes() {
+        return initValNodes;
+    }
+
+    public Token getRbrace() {
+        return rbrace;
     }
 }

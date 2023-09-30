@@ -1,4 +1,4 @@
-package front;
+package Token;
 
 public class Token {
     private TokenType type;

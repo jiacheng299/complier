@@ -1,5 +1,5 @@
 package node;
-import front.*;
+import Token.Token;
 
 import java.util.List;
 
@@ -27,5 +27,25 @@ public class VarDeclNode {
         }
         System.out.println(semi.toString());
         System.out.println("<VarDecl>");
+    }
+
+    public BTypeNode getbTypeNode() {
+        return bTypeNode;
+    }
+
+    public VarDefNode getVarDefNode() {
+        return varDefNode;
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<VarDefNode> getVarDefNodes() {
+        return varDefNodes;
+    }
+
+    public Token getSemi() {
+        return semi;
     }
 }

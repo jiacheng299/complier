@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 //PrimaryExp → '(' Exp ')' | LVal | Number
 public class PrimaryExpNode {
@@ -30,5 +30,25 @@ public class PrimaryExpNode {
             numberNode.print();
         }
         System.out.println("<PrimaryExp>");
+    }
+
+    public Token getLparent() {
+        return lparent;
+    }
+
+    public Token getRparent() {
+        return rparent;
+    }
+
+    public ExpNode getExpNode() {
+        return expNode;
+    }
+
+    public LValNode getlValNode() {
+        return lValNode;
+    }
+
+    public NumberNode getNumberNode() {
+        return numberNode;
     }
 }

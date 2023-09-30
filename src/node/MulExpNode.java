@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -25,5 +25,13 @@ public class MulExpNode {
             unaryExpNodes.get(i+1).print();
         }
         System.out.println("<MulExp>");
+    }
+
+    public List<UnaryExpNode> getUnaryExpNodes() {
+        return unaryExpNodes;
+    }
+
+    public List<Token> getOps() {
+        return ops;
     }
 }

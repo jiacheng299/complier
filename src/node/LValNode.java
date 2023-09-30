@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -26,5 +26,21 @@ public class LValNode {
             System.out.println(rbracks.get(i).toString());
         }
         System.out.println("<LVal>");
+    }
+
+    public Token getIdent() {
+        return ident;
+    }
+
+    public List<Token> getLbracks() {
+        return lbracks;
+    }
+
+    public List<ExpNode> getExpNodes() {
+        return expNodes;
+    }
+
+    public List<Token> getRbracks() {
+        return rbracks;
     }
 }

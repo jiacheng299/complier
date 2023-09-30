@@ -1,6 +1,6 @@
 package node;
 
-import front.Token;
+import Token.Token;
 
 import java.util.List;
 
@@ -21,5 +21,13 @@ public class FuncFParamsNode {
             funcFParamsNodes.get(i).print();
         }
         System.out.println("<FuncFParams>");
+    }
+
+    public List<Token> getCommas() {
+        return commas;
+    }
+
+    public List<FuncFParamNode> getFuncFParamsNodes() {
+        return funcFParamsNodes;
     }
 }
