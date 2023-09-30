@@ -7,6 +7,7 @@ public class error {
     private errorType type;
     private Integer errorLine;
     private static List<error>errorList=new ArrayList<error>();
+    public static List<error> getErrorList() {return errorList;}
     public error(error.errorType type, Integer errorLine) {
         this.type = type;
         this.errorLine = errorLine;
@@ -18,6 +19,13 @@ public class error {
         a,b,c,d,e,f,g,h,i,j,k,l,m;
     }
 
+    public Integer getErrorLine() {
+        return errorLine;
+    }
+
+    public String toString() {
+        return errorLine+" "+type;
+    }
 
 
 }

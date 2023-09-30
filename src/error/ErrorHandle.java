@@ -12,7 +12,8 @@ import java.util.List;
 public class ErrorHandle {
     private static final ErrorHandle instance=new ErrorHandle();
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
-    public ErrorHandle getInstance(){return instance;}
+    public static ErrorHandle getInstance(){return instance;}
+    private int loopDepth=0;
     public void start(CompUnitNode compUnitNode){
         //CompUnit → {Decl} {FuncDef} MainFuncDef
 
@@ -24,11 +25,24 @@ public class ErrorHandle {
         }
         handleMainFuncDef(compUnitNode.getMainFuncDefNode());
     }
+
+    private boolean isInFunction(){
+        List<SymbolInfo> reversedList = new ArrayList<>(currentNode.getParent().getSymbolMap().values());
+        for (SymbolInfo symbolInfo : reversedList){
+            if (symbolInfo.getType()==SymbolInfo.SymbolType.func){
+                return true;
+            }
+        }
+        return false;
+    }
     private SymbolInfo.SymbolType getFuncRParamInExp(ExpNode expNode){
         UnaryExpNode unaryExpNode=expNode.getAddExpNode().getMulExpNodes().get(0).getUnaryExpNodes().get(0);
         return getFuncRParamInUnaryExp(unaryExpNode);
     }
     private SymbolInfo.ReturnType getReturnType(){
+        if (currentNode.getParent()==null){
+            return SymbolInfo.ReturnType.INT;
+        }
         List<SymbolInfo> reversedList = new ArrayList<>(currentNode.getParent().getSymbolMap().values());
         Collections.reverse(reversedList);
         for (SymbolInfo symbolInfo : reversedList) {
@@ -77,6 +91,7 @@ public class ErrorHandle {
     }
     private void handleConstDecl(ConstDeclNode constDeclNode) {
         // ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
+        handleConstDef(constDeclNode.getConstDefNode());
         for (ConstDefNode constDef : constDeclNode.getConstDefNodes()) {
             handleConstDef(constDef);
         }
@@ -85,7 +100,7 @@ public class ErrorHandle {
     private void handleConstDef(ConstDefNode constDefNode) {
         //ConstDef → Ident { '[' ConstExp ']' } '=' ConstInitVal
         //如果当前作用域下已有过此变量的定义,需要添加到错误信息中
-        if (SymbolTableNode.getCurrentNode().getSymbolInCurrent(constDefNode.getIdent().getValue())!=null){
+        if (currentNode.getSymbolInCurrent(constDefNode.getIdent().getValue())!=null){
             error.addError(error.errorType.b,constDefNode.getIdent().getLineNumber());
             return;
         }
@@ -127,7 +142,7 @@ public class ErrorHandle {
     private void handleVarDef(VarDefNode varDefNode) {
         // VarDef → Ident { '[' ConstExp ']' } // 包含普通变量、一维数组、二维数组定义
         //| Ident { '[' ConstExp ']' } '=' InitVal
-        if (SymbolTableNode.getCurrentNode().getSymbolInCurrent(varDefNode.getIdent().getValue())!=null){
+        if (currentNode.getSymbolInCurrent(varDefNode.getIdent().getValue())!=null){
             error.addError(error.errorType.b,varDefNode.getIdent().getLineNumber());
             return;
         }
@@ -158,7 +173,7 @@ public class ErrorHandle {
     }
     private void handleFuncDef(FuncDefNode funcDef) {
         //FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
-        if (SymbolTableNode.getCurrentNode().getSymbolInCurrent(funcDef.getIdent().getValue())!=null){
+        if (currentNode.getSymbolInCurrent(funcDef.getIdent().getValue())!=null){
             error.addError(error.errorType.b,funcDef.getIdent().getLineNumber());
             return;
         }
@@ -180,11 +195,15 @@ public class ErrorHandle {
         }
         currentNode.addSymbol(funcDef.getIdent().getValue(),symbolInfo);
         currentNode.enterScope();
+        currentNode=SymbolTableNode.getCurrentNode();
         handleBlock(funcDef.getBlockNode());
     }
     private void handleMainFuncDef(MainFuncDefNode mainFuncDefNode) {
         // MainFuncDef → 'int' 'main' '(' ')' Block
+        SymbolInfo symbolInfo=new SymbolInfo("main", SymbolInfo.SymbolType.func,currentNode, SymbolInfo.ReturnType.INT);
+        currentNode.addSymbol("main",symbolInfo);
         currentNode.enterScope();
+        currentNode=SymbolTableNode.getCurrentNode();
         handleBlock(mainFuncDefNode.getBlockNode());
     }
     private void handleFuncFParams(FuncFParamsNode funcFParamsNode) {
@@ -210,14 +229,17 @@ public class ErrorHandle {
         for (BlockItemNode blockItemNode:blockNode.getBlockItemNodes()){
             handleBlockItem(blockItemNode);
         }
-
-        SymbolInfo.ReturnType temp=getReturnType();
-        if (temp!= SymbolInfo.ReturnType.VOID){
-            if (blockNode.getBlockItemNodes().size()==0||blockNode.getBlockItemNodes().get(blockNode.getBlockItemNodes().size()-1).getStmtnode()==null||blockNode.getBlockItemNodes().get(blockNode.getBlockItemNodes().size()-1).getStmtnode().getReturntk()==null){
-                error.addError(error.errorType.g,blockNode.getRbrace().getLineNumber());
+        if (isInFunction()){
+            SymbolInfo.ReturnType temp=getReturnType();
+            if (temp!= SymbolInfo.ReturnType.VOID){
+                if (blockNode.getBlockItemNodes().size()==0||blockNode.getBlockItemNodes().get(blockNode.getBlockItemNodes().size()-1).getStmtnode()==null||blockNode.getBlockItemNodes().get(blockNode.getBlockItemNodes().size()-1).getStmtnode().getReturntk()==null){
+                    error.addError(error.errorType.g,blockNode.getRbrace().getLineNumber());
+                }
             }
         }
+
         currentNode.exitScope();
+        currentNode=SymbolTableNode.getCurrentNode();
     }
 
     private void handleBlockItem(BlockItemNode blockItemNode) {
@@ -235,13 +257,16 @@ public class ErrorHandle {
         if (stmtnode.getLvalnode()!=null&&stmtnode.getExpNode()!=null){
             handleLVal(stmtnode.getLvalnode());
             handleExp(stmtnode.getExpNode());
-            if(currentNode.getSymbol(stmtnode.getLvalnode().getIdent().getValue()).getConst()==true){
-                error.addError(error.errorType.h,stmtnode.getLvalnode().getIdent().getLineNumber());
+            if (currentNode.getSymbol(stmtnode.getLvalnode().getIdent().getValue())!=null){
+                if(currentNode.getSymbol(stmtnode.getLvalnode().getIdent().getValue()).getConst()==true){
+                    error.addError(error.errorType.h,stmtnode.getLvalnode().getIdent().getLineNumber());
+                }
             }
         }
         //| Block
         else if (stmtnode.getBlockNode()!=null) {
             currentNode.enterScope();
+            currentNode=SymbolTableNode.getCurrentNode();
             handleBlock(stmtnode.getBlockNode());
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ] // 1.有else 2.无else
@@ -254,17 +279,23 @@ public class ErrorHandle {
         }
         //| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt // 1. 无缺省 2. 缺省第一个ForStmt 3. 缺省Cond 4. 缺省第二个ForStmt
         else if (stmtnode.getFortk()!=null) {
+            loopDepth++;
             if (stmtnode.getForStmt1()!=null) handleForStmt(stmtnode.getForStmt1());
             if (stmtnode.getCondNode()!=null) handleCond(stmtnode.getCondNode());
             if (stmtnode.getForStmt2()!=null) handleForStmt(stmtnode.getForStmt2());
             handleStmt(stmtnode.getStmtNodes().get(0));
+            loopDepth--;
         }
         //| 'break' ';' | 'continue' ';'
         else if(stmtnode.getBreaktkOrcontinuetk()!=null){
             if (stmtnode.getBreaktkOrcontinuetk().getType()== TokenType.BREAKTK){
-
+                if (loopDepth<=0){
+                    error.addError(error.errorType.m,stmtnode.getBreaktkOrcontinuetk().getLineNumber());
+                }
             } else{
-
+                if (loopDepth<=0){
+                    error.addError(error.errorType.m,stmtnode.getBreaktkOrcontinuetk().getLineNumber());
+                }
             }
         }
         //| 'return' [Exp] ';' // 1.有Exp 2.无Exp
@@ -285,11 +316,23 @@ public class ErrorHandle {
         }
         //| LVal '=' 'getint''('')'';'
         else if (stmtnode.getGetinttk()!=null){
+            if(currentNode.getSymbol(stmtnode.getLvalnode().getIdent().getValue()).getConst()==true){
+                error.addError(error.errorType.h,stmtnode.getLvalnode().getIdent().getLineNumber());
+            }
             handleLVal(stmtnode.getLvalnode());
         }
         //| 'printf''('FormatString{','Exp}')'';' // 1.有Exp 2.无Exp
         else if(stmtnode.getPrintftk()!=null){
             //stmtnode.getFormatStringtk()
+            int modNum=0;
+            for (int i=0;i<stmtnode.getFormatStringtk().getValue().length();i++){
+                if(stmtnode.getFormatStringtk().getValue().charAt(i)=='%'){
+                    modNum++;
+                }
+            }
+            if (stmtnode.getExpNodes().size()!=modNum){
+                error.addError(error.errorType.l,stmtnode.getPrintftk().getLineNumber());
+            }
             for (ExpNode expNode: stmtnode.getExpNodes()){
                 handleExp(expNode);
             }

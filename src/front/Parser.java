@@ -192,7 +192,7 @@ public class Parser {
         Token lparent=match(TokenType.LPARENT);
         FuncFParamsNode funcFParamsNode =null;
         Token rparent=null;
-        if(getCurrentToken().getType() == TokenType.RPARENT) {
+        if(getCurrentToken().getType() != TokenType.INTTK) {
             rparent = match(TokenType.RPARENT);
         }
         else{
@@ -629,7 +629,7 @@ public class Parser {
         } else if (type==TokenType.RPARENT) {
             error.addError(error.errorType.j,tokens.get(currentTokenIndex-1).getLineNumber());
             return currentToken;
-        }else if (type == TokenType.LBRACK){
+        }else if (type == TokenType.RBRACK){
             error.addError(error.errorType.k,tokens.get(currentTokenIndex-1).getLineNumber());
             return currentToken;
         }

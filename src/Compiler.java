@@ -1,11 +1,13 @@
 // 按两次 Shift 打开“随处搜索”对话框并输入 `show whitespaces`，
 // 然后按 Enter 键。现在，您可以在代码中看到空格字符。
 
+import error.*;
 import front.Lexer;
 import front.Parser;
 import Token.Token;
 
 import java.io.*;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -25,14 +27,29 @@ public class Compiler {
         System.out.println(content);
         List<Token> words=lexer.tokenize();
 
-
-//        try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
-//            for (int i = 0; i < words.size(); i++) {
-//                writer.println(words.get(i));
-//            }
-//        }
+        if (config.showLexer){
+            try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
+                for (int i = 0; i < words.size(); i++) {
+                    writer.println(words.get(i));
+                }
+            }
+        }
         Parser parser=new Parser(words);
         parser.parse();
-        parser.getEntrance().print();
+        if (config.showParser){
+            parser.getEntrance().print();
+        }
+        ErrorHandle errorHandle=ErrorHandle.getInstance();
+        errorHandle.start(parser.getEntrance());
+        if (config.showError){
+            List<error> errorList=error.getErrorList();
+            errorList.sort(Comparator.comparingInt(error::getErrorLine));
+            try(PrintWriter writer = new PrintWriter(new FileWriter("output.txt"))){
+
+                for (int i=0;i<errorList.size(); i++){
+                    writer.println(errorList.get(i));
+                }
+            }
+        }
     }
 }
