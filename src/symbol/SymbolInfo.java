@@ -5,6 +5,22 @@ import java.util.List;
 
 public class SymbolInfo {
     private String name;
+
+    public Integer getValue() {
+        return value;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    private Integer id;
+    private Integer value;
+
+    public String getName() {
+        return name;
+    }
+
     private SymbolType type;
     private String address;
     private SymbolTableNode node;
