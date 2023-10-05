@@ -5,6 +5,8 @@ import error.*;
 import front.Lexer;
 import front.Parser;
 import Token.Token;
+import ir.Generator;
+import ir.Module;
 
 import java.io.*;
 import java.util.Comparator;
@@ -51,5 +53,8 @@ public class Compiler {
                 }
             }
         }
+        Generator generator=new Generator();
+        generator.start(parser.getEntrance());
+        Module.getModule().print();
     }
 }

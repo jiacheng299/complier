@@ -409,8 +409,11 @@ public class ErrorHandle {
     }
 
     private void handleUnaryExp(UnaryExpNode unaryExpNode) {
-        //UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')'
+        //UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')'| UnaryOp UnaryExp
         if (unaryExpNode.getPrimaryExpNode()!=null)     handlePaimaryExp(unaryExpNode.getPrimaryExpNode());
+        else if(unaryExpNode.getUnaryOpNode()!=null){
+            handleUnaryExp(unaryExpNode.getUnaryExpNode());
+        }
         else{
             if (currentNode.getSymbol(unaryExpNode.getIdent().getValue())==null){
                 error.addError(error.errorType.c,unaryExpNode.getIdent().getLineNumber());
