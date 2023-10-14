@@ -3,8 +3,10 @@ package ir.Basic;
 
 import ir.Basic.BasicBlock;
 import ir.Parameter;
+import ir.Type.DataType;
 import ir.Variable;
 
+import javax.xml.crypto.Data;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,8 +17,8 @@ public class Function {
     private List<BasicBlock> basicBlocks;//基本块列表
     private BasicBlock entryBlock;//入口block
     private BasicBlock exitBlock;//出口block
-    private ReturnType returnType;
-    public Function(String name,ReturnType returnType) {
+    private DataType returnType;
+    public Function(String name,DataType returnType) {
         this.name = name;
         this.returnType =returnType;
         this.parameters = new ArrayList<>();
@@ -51,10 +53,7 @@ public class Function {
     }
 
     public void print(){
-        if (returnType==ReturnType.i32)
+        if (returnType==DataType.i32)
         System.out.println("define dso_local "+returnType+" @"+name);
-    }
-    enum ReturnType {
-        i32,i1,VOID;
     }
 }
