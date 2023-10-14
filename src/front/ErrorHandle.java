@@ -1,6 +1,7 @@
-package error;
+package front;
 
 import Token.TokenType;
+import error.error;
 import node.*;
 import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
@@ -35,6 +36,7 @@ public class ErrorHandle {
         }
         return false;
     }
+
     private SymbolInfo.SymbolType getFuncRParamInExp(ExpNode expNode){
         UnaryExpNode unaryExpNode=expNode.getAddExpNode().getMulExpNodes().get(0).getUnaryExpNodes().get(0);
         return getFuncRParamInUnaryExp(unaryExpNode);
@@ -61,7 +63,26 @@ public class ErrorHandle {
                     else return SymbolInfo.SymbolType.interger;
                 }
                 else{
-                    return symbolInfo.getType();
+                    if (symbolInfo.getType()== SymbolInfo.SymbolType.interger){
+                        return SymbolInfo.SymbolType.interger;
+                    } else if (symbolInfo.getType()== SymbolInfo.SymbolType.oneArray) {
+                        if (unaryExpNode.getPrimaryExpNode().getlValNode().getExpNodes().size()==0){
+                            return SymbolInfo.SymbolType.oneArray;
+                        }
+                        else{
+                            return SymbolInfo.SymbolType.interger;
+                        }
+                    }else{
+                        if (unaryExpNode.getPrimaryExpNode().getlValNode().getExpNodes().size()==0){
+                            return SymbolInfo.SymbolType.twoArray;
+                        }
+                        else if (unaryExpNode.getPrimaryExpNode().getlValNode().getExpNodes().size()==1){
+                            return SymbolInfo.SymbolType.oneArray;
+                        }
+                        else{
+                            return SymbolInfo.SymbolType.interger;
+                        }
+                    }
                 }
             }
             else if (unaryExpNode.getPrimaryExpNode().getNumberNode()!=null){
@@ -191,11 +212,16 @@ public class ErrorHandle {
                 else symbolInfo1=new SymbolInfo(funcFParamNode.getIdent().getValue(), SymbolInfo.SymbolType.twoArray,currentNode,false);
                 symbolInfo.addFuncParam(symbolInfo1);
             }
+            currentNode.addSymbol(funcDef.getIdent().getValue(),symbolInfo);
+            currentNode.enterScope();
+            currentNode=SymbolTableNode.getCurrentNode();
             handleFuncFParams(funcDef.getFuncFParamsNode());
         }
-        currentNode.addSymbol(funcDef.getIdent().getValue(),symbolInfo);
-        currentNode.enterScope();
-        currentNode=SymbolTableNode.getCurrentNode();
+        else{
+            currentNode.addSymbol(funcDef.getIdent().getValue(),symbolInfo);
+            currentNode.enterScope();
+            currentNode=SymbolTableNode.getCurrentNode();
+        }
         handleBlock(funcDef.getBlockNode());
     }
     private void handleMainFuncDef(MainFuncDefNode mainFuncDefNode) {
@@ -219,6 +245,15 @@ public class ErrorHandle {
             error.addError(error.errorType.b,funcFParamNode.getIdent().getLineNumber());
             return;
         }
+        SymbolInfo symbolInfo=null;
+        if (funcFParamNode.getLbracks().size()==0){
+            symbolInfo=new SymbolInfo(funcFParamNode.getIdent().getValue(), SymbolInfo.SymbolType.interger,currentNode,false);
+        } else if (funcFParamNode.getLbracks().size()==1) {
+            symbolInfo=new SymbolInfo(funcFParamNode.getIdent().getValue(), SymbolInfo.SymbolType.oneArray,currentNode,false);
+        }else{
+            symbolInfo=new SymbolInfo(funcFParamNode.getIdent().getValue(), SymbolInfo.SymbolType.twoArray,currentNode,false);
+        }
+        currentNode.addSymbol(funcFParamNode.getIdent().getValue(),symbolInfo);
         for (ConstExpNode constExpNode:funcFParamNode.getConstExpNodes()){
             handleConstExp(constExpNode);
         }
@@ -347,6 +382,11 @@ public class ErrorHandle {
         //ForStmt → LVal '=' Exp
         handleLVal(forStmt.getlValNode());
         handleExp(forStmt.getExpNode());
+        if (currentNode.getSymbol(forStmt.getlValNode().getIdent().getValue())!=null){
+            if(currentNode.getSymbol(forStmt.getlValNode().getIdent().getValue()).getConst()==true){
+                error.addError(error.errorType.h,forStmt.getlValNode().getIdent().getLineNumber());
+            }
+        }
     }
     private void handleExp(ExpNode expNode) {
         // Exp → AddExp

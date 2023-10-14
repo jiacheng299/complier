@@ -419,11 +419,9 @@ public class Lexer {
         while(currentChar!='"'){
             //System.out.println((int)currentChar);
             if (currentChar==92&&input.charAt(position+1)!='n'){
-                System.out.println("a类错误");
                 error.addError(error.errorType.a,lineNumber);
             }
             if(currentChar!='%'&&currentChar!='d'&&(int)currentChar!=32&&(int)currentChar!=33&&((int)currentChar>126||(int)currentChar<40)){
-                System.out.println("a类错误");
                 error.addError(error.errorType.a,lineNumber);
             }
             formatString.append(currentChar);

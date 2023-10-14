@@ -378,7 +378,7 @@ public class Parser {
         }else if (getCurrentToken().getType()==TokenType.RETURNTK) {
             //| 'return' [Exp] ';'
             returntk=match(TokenType.RETURNTK);
-            if(getCurrentToken().getType()!= TokenType.SEMICN){
+            if(isExp()){
                 expNode=Exp();
             }
             semis.add(match(TokenType.SEMICN));
@@ -601,21 +601,11 @@ public class Parser {
         }
         return new LOrExpNode(landExpNodes,ors);
     }
-
     private ConstExpNode ConstExp() {
         //ConstExp → AddExp
         AddExpNode addExp = AddExp();
         return new ConstExpNode(addExp);
     }
-
-
-
-
-
-    // FuncDef规则
-
-    // MainFuncDef规则
-
 
     // 匹配当前 Token.Token 并返回
     private Token match(TokenType type) {
@@ -634,7 +624,8 @@ public class Parser {
             return currentToken;
         }
         else {
-            throw new RuntimeException("Syntax error: Expected " + type + " but found " + currentToken.getType());
+//            return currentToken;
+          throw new RuntimeException("Syntax error: Expected " + type + " but found " + currentToken.getType());
         }
     }
 
@@ -647,7 +638,14 @@ public class Parser {
     private boolean hasNextToken() {
         return currentTokenIndex < tokens.size();
     }
-
+    private boolean isExp() {
+        return getCurrentToken().getType() == TokenType.IDENFR ||
+                getCurrentToken().getType() == TokenType.PLUS ||
+                getCurrentToken().getType() == TokenType.MINU ||
+                getCurrentToken().getType() == TokenType.NOT ||
+                getCurrentToken().getType() == TokenType.LPARENT ||
+                getCurrentToken().getType() == TokenType.INTCON;
+    }
     // 前进到下一个 Token.Token
     private void advance() {
         currentTokenIndex++;

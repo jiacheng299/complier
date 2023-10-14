@@ -1,7 +1,9 @@
 // 按两次 Shift 打开“随处搜索”对话框并输入 `show whitespaces`，
 // 然后按 Enter 键。现在，您可以在代码中看到空格字符。
 
+import config.config;
 import error.*;
+import front.ErrorHandle;
 import front.Lexer;
 import front.Parser;
 import Token.Token;
@@ -46,15 +48,18 @@ public class Compiler {
         if (config.showError){
             List<error> errorList=error.getErrorList();
             errorList.sort(Comparator.comparingInt(error::getErrorLine));
-            try(PrintWriter writer = new PrintWriter(new FileWriter("output.txt"))){
+            try(PrintWriter writer = new PrintWriter(new FileWriter("error.txt"))){
 
                 for (int i=0;i<errorList.size(); i++){
                     writer.println(errorList.get(i));
                 }
             }
         }
-        Generator generator=new Generator();
-        generator.start(parser.getEntrance());
-        Module.getModule().print();
+        if (config.generator){
+            Generator generator=new Generator();
+            generator.start(parser.getEntrance());
+            Module.getModule().print();
+        }
+
     }
 }
