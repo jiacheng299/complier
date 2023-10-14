@@ -1,7 +1,9 @@
-package ir;
+package ir.Basic;
 
 
-import symbol.SymbolInfo;
+import ir.Basic.BasicBlock;
+import ir.Parameter;
+import ir.Variable;
 
 import java.util.ArrayList;
 import java.util.List;

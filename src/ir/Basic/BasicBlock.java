@@ -1,4 +1,6 @@
-package ir;
+package ir.Basic;
+
+import ir.Instruction.Instruction;
 
 import java.util.ArrayList;
 import java.util.List;

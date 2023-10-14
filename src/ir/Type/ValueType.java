@@ -1,4 +1,4 @@
-package ir;
+package ir.Type;
 
 public enum ValueType {
 }

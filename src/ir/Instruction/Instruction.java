@@ -1,4 +1,7 @@
-package ir;
+package ir.Instruction;
+
+import ir.Basic.BasicBlock;
+import ir.Value;
 
 public class Instruction {
     private OpCode opCode;
@@ -40,6 +43,3 @@ public class Instruction {
 
 }
 
-enum OpCode {
-    add,sub,mul,sdiv,mod;
-}
