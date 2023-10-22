@@ -2,6 +2,7 @@ package ir;
 
 import ir.Basic.BasicBlock;
 import ir.Basic.Function;
+import ir.Basic.GlobalVar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,9 @@ public class Module {
 
     }
     public void print(){
+        for (GlobalVar globalVar:globalVars){
+            globalVar.print();
+        }
         for(Function f : functions){
             f.print();
             System.out.println("{\n");
@@ -31,7 +35,7 @@ public class Module {
     public void addFunction(Function function) {
         module.functions.add(function);
     }
-    public void addGlobalVar(ir.GlobalVar globalVar) {
+    public void addGlobalVar(GlobalVar globalVar) {
         module.globalVars.add(globalVar);
     }
 }

@@ -8,6 +8,8 @@ import java.util.List;
 public class Value {
     protected String name;
     protected ValueType type;
+    protected boolean isConst=false;
+    protected boolean isGlobal=false;
     private List<Use> uses;
     public Value(){}
     public Value(String name, ValueType type) {

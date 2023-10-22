@@ -54,6 +54,8 @@ public class Function {
 
     public void print(){
         if (returnType==DataType.i32)
-        System.out.println("define dso_local "+returnType+" @"+name);
+        System.out.println("define dso_local "+returnType+" @"+name+"(");
+        //加入一系列参数
+        System.out.println(")");
     }
 }

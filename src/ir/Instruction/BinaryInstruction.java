@@ -12,6 +12,6 @@ public class BinaryInstruction extends BaseInstruction{
             this.opCode=opCode;
         }
         public void print(){
-            System.out.println(this.result+" = "+this.opCode+" "+value1.getType()+" "+value1.getName()+", "+value2.getName());
+            System.out.println(this.result.getName()+" = "+this.opCode+" "+value1.getType()+" "+value1.getName()+", "+value2.getName());
         }
 }

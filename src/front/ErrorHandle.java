@@ -361,7 +361,7 @@ public class ErrorHandle {
             //stmtnode.getFormatStringtk()
             int modNum=0;
             for (int i=0;i<stmtnode.getFormatStringtk().getValue().length();i++){
-                if(stmtnode.getFormatStringtk().getValue().charAt(i)=='%'){
+                if(stmtnode.getFormatStringtk().getValue().charAt(i)=='%'&&stmtnode.getFormatStringtk().getValue().charAt(i+1)=='d'){
                     modNum++;
                 }
             }
