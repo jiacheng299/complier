@@ -9,6 +9,7 @@ import front.Parser;
 import Token.Token;
 import ir.Generator;
 import ir.Module;
+import node.RedirectSystemOut;
 
 import java.io.*;
 import java.util.Comparator;
@@ -32,7 +33,7 @@ public class Compiler {
         List<Token> words=lexer.tokenize();
 
         if (config.showLexer){
-            try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter("output.txt"))) {
                 for (int i = 0; i < words.size(); i++) {
                     writer.println(words.get(i));
                 }
@@ -55,6 +56,7 @@ public class Compiler {
                 }
             }
         }
+        System.setOut(RedirectSystemOut.ps);
         if (config.generator){
             Generator generator=new Generator();
             generator.start(parser.getEntrance());

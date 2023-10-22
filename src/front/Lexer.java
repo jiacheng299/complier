@@ -424,6 +424,9 @@ public class Lexer {
             if(currentChar!='%'&&currentChar!='d'&&(int)currentChar!=32&&(int)currentChar!=33&&((int)currentChar>126||(int)currentChar<40)){
                 error.addError(error.errorType.a,lineNumber);
             }
+            if (currentChar=='%'&&input.charAt(position+1)!='d'&&input.charAt(position-1)!='%'){
+                error.addError(error.errorType.a,lineNumber);
+            }
             formatString.append(currentChar);
             position++;
             if(position>=input.length()){

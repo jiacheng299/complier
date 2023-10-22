@@ -52,12 +52,10 @@ public class Parser {
         VarDeclNode varDeclNode=null;
         if(getCurrentToken().getType()==TokenType.CONSTTK){
             constDeclNode=constDecl();
-        } else if (getCurrentToken().getType()==TokenType.INTTK) {
+        } else {
             varDeclNode=varDecl();
         }
-        else{
-            error();
-        }
+
         return new DeclNode(constDeclNode,varDeclNode);
     }
 
@@ -300,10 +298,17 @@ public class Parser {
         List<ExpNode> expNodes=new ArrayList<>();
         List<Token> semis=new ArrayList<>();
         List<StmtNode> stmtNodes = new ArrayList<>();
-
+        Integer temp=currentTokenIndex;
         //Lval
         if (getCurrentToken().getType()==TokenType.IDENFR&&(tokens.get(currentTokenIndex+1).getType()==TokenType.ASSIGN||tokens.get(currentTokenIndex+1).getType()==TokenType.LBRACK)){
+
             lvalNode=LVal();
+            if (tokens.get(currentTokenIndex).getType()!=TokenType.ASSIGN){
+                currentTokenIndex=temp;
+                expNode=Exp();
+                semis.add(match(TokenType.SEMICN));
+                return new StmtNode(StmtNode.StmtType.Exp,expNode,semis);
+            }
             assign=match(TokenType.ASSIGN);
             //| LVal '=' 'getint''('')'';'
             if (getCurrentToken().getType()==TokenType.GETINTTK){
@@ -319,7 +324,7 @@ public class Parser {
                 semis.add(match(TokenType.SEMICN));
                 return new StmtNode(StmtNode.StmtType.LvalAssignExp,lvalNode,assign,expNode,semis);
             }
-        } else if (getCurrentToken().getType()==TokenType.SEMICN||getCurrentToken().getType()==TokenType.IDENFR||getCurrentToken().getType() == TokenType.LPARENT||getCurrentToken().getType()==TokenType.INTCON) {
+        } else if (getCurrentToken().getType()==TokenType.SEMICN||isExp()) {
             //| [Exp] ';'
             if(getCurrentToken().getType() == TokenType.SEMICN){
                 semis.add(match(TokenType.SEMICN));
@@ -397,7 +402,6 @@ public class Parser {
             return new StmtNode(StmtNode.StmtType.Printf,printtk,lparent,rparent,semis,format,expNodes,commas);
         }
         else{
-            error();
             return null;
         }
     }
@@ -470,7 +474,10 @@ public class Parser {
             ident=match(TokenType.IDENFR);
             lparent=match(TokenType.LPARENT);
             if(getCurrentToken().getType()!=TokenType.RPARENT){
-                fparams=FuncRparams();
+                if (getCurrentToken().getType()==TokenType.SEMICN){
+
+                }
+                else fparams=FuncRparams();
             }
             rparent=match(TokenType.RPARENT);
         } else if (getCurrentToken().getType()==TokenType.PLUS||getCurrentToken().getType()==TokenType.MINU||getCurrentToken().getType()==TokenType.NOT) {

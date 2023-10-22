@@ -10,5 +10,7 @@ public class Const extends Value {
         this.type= ValueType.i32;
         this.name= name;
     }
-
+    public int getValue(){
+        return Integer.parseInt(name);
+    }
 }
