@@ -3,10 +3,7 @@ package ir;
 import ir.Basic.BasicBlock;
 import ir.Basic.Const;
 import ir.Basic.GlobalVar;
-import ir.Instruction.BinaryInstruction;
-import ir.Instruction.Instruction;
-import ir.Instruction.OpCode;
-import ir.Instruction.RetInstruction;
+import ir.Instruction.*;
 import ir.Type.DataType;
 import ir.Type.ValueType;
 
@@ -39,5 +36,13 @@ public class BuildFactory {
         GlobalVar globalVar=new GlobalVar(name,valueType,isConst);
         currentModule.addGlobalVar(globalVar);
         return globalVar;
+    }
+    public void createAllocateInst(BasicBlock basicBlock, Value value,Value param){
+        AllocateInstruction allocateInstruction = new AllocateInstruction(value,param);
+        basicBlock.addInstruction(allocateInstruction);
+    }
+    public void createStoreInst(BasicBlock basicBlock, Value value1,Value value2){
+        StoreInstruction storeInstruction = new StoreInstruction(value1, value2);
+        basicBlock.addInstruction(storeInstruction);
     }
 }

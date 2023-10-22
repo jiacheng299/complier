@@ -9,7 +9,7 @@ import java.util.List;
 
 public class GlobalVar extends Value {
     //List<Object> init;
-    private Integer num;
+
     public GlobalVar(String name, ValueType valueType, boolean isConst){
         this.name = name;
         this.type=valueType;

@@ -73,9 +73,15 @@ public class Generator {
     }
 
     private void handleBlock(BlockNode blockNode) {
+        //每次进入一个新的block相当于要换一个作用域
+        ValueTable valueTable=new ValueTable();
+        currentValueTable.sons.add(valueTable);
+        valueTable.father=currentValueTable;
+        currentValueTable=valueTable;
         for (BlockItemNode blockItem : blockNode.getBlockItemNodes()){
             handleBlockItem(blockItem);
         }
+        currentValueTable=currentValueTable.father;
     }
 
     private void handleBlockItem(BlockItemNode blockItem) {
@@ -93,6 +99,35 @@ public class Generator {
             else{
                 buildFactory.createRetInst(currentBasicBlock,new Value(),DataType.VOID);
             }
+        }
+        //| Block
+        else if (stmtnode.getBlockNode()!=null){
+            handleBlock(stmtnode.getBlockNode());
+        }
+        //LVal
+        else if(stmtnode.getLvalnode() != null){
+            //LVal '=' Exp ';'
+            //| LVal '=' 'getint''('')'';'
+        }
+        //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+        else if(stmtnode.getIftk() != null){
+
+        }
+        //| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
+        else if(stmtnode.getFortk() != null){
+
+        }
+        //| 'break' ';' | 'continue' ';'
+        else if(stmtnode.getBreaktkOrcontinuetk()!=null){
+
+        }
+        //| 'printf''('FormatString{','Exp}')'';'
+        else if(stmtnode.getPrintftk()!=null){
+
+        }
+        //| [Exp] ';'
+        else{
+
         }
     }
 
@@ -202,9 +237,19 @@ public class Generator {
                 globalVar.setNum(num);
                 currentValueTable.addValue(constDefNode.getIdent().getValue(),globalVar);
             }
-
         }
-
+        else{
+            if(constDefNode.getConstExpNodes().size()==0){
+                User user=null;
+                Value param=new Value();
+                if(btype.getInttk()!=null) {
+                    user=new User(buildFactory.getId(),ValueType.i32);
+                    param.setType(ValueType.i32);
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                currentValueTable.addValue(constDefNode.getIdent().getValue(),user);
+            }
+        }
     }
     private void handleVarDecl(VarDeclNode varDeclNode) {
         //VarDecl → BType VarDef { ',' VarDef } ';'
@@ -216,13 +261,14 @@ public class Generator {
 
     private void handleVarDef(VarDefNode varDefNode, BTypeNode bTypeNode) {
         //VarDef → Ident { '[' ConstExp ']' } | Ident { '[' ConstExp ']' } '=' InitVal
+        //是否为全局变量
         if (currentValueTable.father==null){
+            //不是数组
             if (varDefNode.getConstExpNodes().size()==0){
                 GlobalVar globalVar = null;
                 if (bTypeNode.getInttk()!=null) {
                     globalVar=buildFactory.createGlobalVar(varDefNode.getIdent().getValue(), ValueType.i32, false);
                 }
-                currentValueTable.addValue(varDefNode.getIdent().getValue(),globalVar);
                 int num=0;
                 if (varDefNode.getInitValNode()!=null){
                     num = ((Const)handleExp(varDefNode.getInitValNode().getExpNode())).getValue();
@@ -231,8 +277,30 @@ public class Generator {
                 currentValueTable.addValue(varDefNode.getIdent().getValue(),globalVar);
             }
         }
+        else{
+            if(varDefNode.getConstExpNodes().size()==0){
+                User user=null;
+                Value param=new Value();
+                if(bTypeNode.getInttk()!=null) {
+                    user=new User(buildFactory.getId(),ValueType.i32);
+                    param.setType(ValueType.i32);
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                //还得给这个变量赋值
+                if (varDefNode.getInitValNode() != null){
+                    handleInitial(user,varDefNode.getInitValNode());
+                }
+                currentValueTable.addValue(varDefNode.getIdent().getValue(),user);
+            }
+        }
     }
 
+    private void handleInitial(Value store,InitValNode initValNode) {
+        //InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'/
+        Value initVal= handleExp(initValNode.getExpNode());
+        Value tempValue=store;
+        buildFactory.createStoreInst(currentBasicBlock,initVal,tempValue);
+    }
 
 
     private void handleConstInitVal(ConstInitValNode constInitValNode) {

@@ -653,6 +653,75 @@ public class Parser {
                 getCurrentToken().getType() == TokenType.LPARENT ||
                 getCurrentToken().getType() == TokenType.INTCON;
     }
+    private boolean isDecl(){
+        if(isConstDecl()||isVarDecl()) return true;
+        else return false;
+    }
+    private boolean isFuncDef(){
+        return iSFuncType();
+    }
+
+    private boolean iSFuncType() {
+        return getCurrentToken().getType() == TokenType.VOIDTK||
+                getCurrentToken().getType() == TokenType.INTTK;
+    }
+    private boolean isConstInitVal(){
+        return isConstExp() ||getCurrentToken().getType() == TokenType.LBRACE;
+    }
+
+    private boolean isConstExp() {
+        return isAddExp();
+    }
+
+    private boolean isAddExp() {
+        return isMulExp();
+    }
+
+    private boolean isMulExp() {
+        return isUnaryExp();
+    }
+
+    private boolean isUnaryExp() {
+        return isPrimaryExp()||isIdent()||isUnaryOp();
+    }
+
+    private boolean isUnaryOp() {
+        return getCurrentToken().getType() == TokenType.PLUS||
+                getCurrentToken().getType() == TokenType.MINU||
+                getCurrentToken().getType() == TokenType.NOT;
+    }
+
+    private boolean isPrimaryExp() {
+        return getCurrentToken().getType()==TokenType.LPARENT||
+                isLVal()||isNumber();
+    }
+    private boolean isVarDef(){
+        return isIdent();
+    }
+    private boolean isNumber() {
+        return getCurrentToken().getType()==TokenType.INTCON;
+    }
+
+    private boolean isLVal() {
+        return isIdent();
+    }
+
+    private boolean isIdent() {
+        return getCurrentToken().getType()==TokenType.IDENFR;
+    }
+
+    private boolean isVarDecl() {
+        return isBtype();
+    }
+
+    private boolean isBtype() {
+        return getCurrentToken().getType() == TokenType.INTTK;
+    }
+
+    private boolean isConstDecl() {
+        return getCurrentToken().getType() == TokenType.CONSTTK;
+    }
+
     // 前进到下一个 Token.Token
     private void advance() {
         currentTokenIndex++;

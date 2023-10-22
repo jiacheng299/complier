@@ -7,6 +7,7 @@ import java.util.List;
 
 public class Value {
     protected String name;
+    protected Integer num;
     protected ValueType type;
     protected boolean isConst=false;
     protected boolean isGlobal=false;
@@ -16,6 +17,9 @@ public class Value {
         this.name=name;
         this.type = type;
         this.uses = new ArrayList<>();
+    }
+    public void setType(ValueType type){
+        this.type = type;
     }
     public ValueType getType() {return type;}
     public void addUse(Use use) {
