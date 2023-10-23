@@ -25,11 +25,7 @@ public class Module {
         }
         for(Function f : functions){
             f.print();
-            System.out.println("{\n");
-            for(BasicBlock basicBlock:f.getBasicBlocks()){
-                basicBlock.print();
-            }
-            System.out.println("}\n");
+
         }
     }
     public void addFunction(Function function) {

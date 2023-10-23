@@ -33,7 +33,7 @@ public class Compiler {
         List<Token> words=lexer.tokenize();
 
         if (config.showLexer){
-            try (PrintWriter writer = new PrintWriter(new FileWriter("output.txt"))) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter("tokens.txt"))) {
                 for (int i = 0; i < words.size(); i++) {
                     writer.println(words.get(i));
                 }

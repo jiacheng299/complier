@@ -2,6 +2,7 @@ package ir;
 
 import ir.Basic.BasicBlock;
 import ir.Basic.Const;
+import ir.Basic.Function;
 import ir.Basic.GlobalVar;
 import ir.Instruction.*;
 import ir.Type.DataType;
@@ -33,7 +34,9 @@ public class BuildFactory {
         basicBlock.addInstruction(binaryInstruction);
     }
     public GlobalVar createGlobalVar(String name,ValueType valueType ,boolean isConst){
-        GlobalVar globalVar=new GlobalVar(name,valueType,isConst);
+        StringBuilder sb = new StringBuilder();
+        sb.append("@").append(name);
+        GlobalVar globalVar=new GlobalVar(sb.toString(),valueType,isConst);
         currentModule.addGlobalVar(globalVar);
         return globalVar;
     }
@@ -44,5 +47,13 @@ public class BuildFactory {
     public void createStoreInst(BasicBlock basicBlock, Value value1,Value value2){
         StoreInstruction storeInstruction = new StoreInstruction(value1, value2);
         basicBlock.addInstruction(storeInstruction);
+    }
+    public void createLoadInst(BasicBlock basicBlock, User value1,Value value2){
+        LoadInstruction loadInstruction = new LoadInstruction(value1, value2);
+        basicBlock.addInstruction(loadInstruction);
+    }
+    public void createCallInst(BasicBlock basicBlock, Function function, Value value){
+        CallInstruction callInstruction = new CallInstruction(function,value);
+        basicBlock.addInstruction(callInstruction);
     }
 }

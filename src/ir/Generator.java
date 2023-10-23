@@ -13,10 +13,14 @@ import node.*;
 import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
 
+import java.util.HashMap;
+import java.util.List;
+
 public class Generator {
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
     private SymbolInfo currentFunction=null;
     private SymbolInfo returnNum=null;
+    private HashMap<String,Function> functionList= Function.getFunctions();
     private ValueTable currentValueTable=new ValueTable();
     private static Integer index=1;
     private StringBuilder irCode=new StringBuilder();
@@ -27,24 +31,63 @@ public class Generator {
     private BasicBlock currentBasicBlock=null;
     public void Generator(){}
     public Value addBinaryInstruction(Value value1, Value value2, OpCode op) {
-        if (value1 instanceof Const && value2 instanceof Const){
+        if(currentBasicBlock==null){
+            if ((value1 instanceof Const||value1 instanceof GlobalVar )&& (value2 instanceof Const||value2 instanceof GlobalVar)){
+                int temp1,temp2;
+                if (value1 instanceof GlobalVar){
+                    temp1=((GlobalVar) value1).getNum();
+                }
+                else{
+                    temp1=Integer.parseInt(value1.getName());
+                }
+                if (value2 instanceof GlobalVar) {
+                    temp2=((GlobalVar) value2).getNum();
+                }
+                else{
+                    temp2=Integer.parseInt(value2.getName());
+                }
+                if (op==OpCode.add){
+                    return buildFactory.createConst(Integer.toString(temp1+temp2));
+                }
+                else if (op == OpCode.sub) {
+                    return buildFactory.createConst(Integer.toString(temp1-temp2));
+                }
+                else if (op == OpCode.mul) {
+                    return buildFactory.createConst(Integer.toString(temp1*temp2));
+                }
+                else if (op == OpCode.mod){
+                    return buildFactory.createConst(Integer.toString(temp1%temp2));
+                }
+                else{
+                    return buildFactory.createConst(Integer.toString(temp1/temp2));
+                }
+            }
+            else {
+//            Value newValue1 = zext(value1);
+//            Value newValue2 = zext(value2);
+                User user = new User(buildFactory.getId(),ValueType.i32);
+                buildFactory.createBinaryInst(currentBasicBlock,value1,value2, user,op);
+                return user;
+            }
+        }
+        if ((value1 instanceof Const )&& (value2 instanceof Const)){
+            int temp1,temp2;
+                temp1=Integer.parseInt(value1.getName());
+                temp2=Integer.parseInt(value2.getName());
             if (op==OpCode.add){
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())+Integer.parseInt(value2.getName())));
+                return buildFactory.createConst(Integer.toString(temp1+temp2));
             }
             else if (op == OpCode.sub) {
-                User user = new User(buildFactory.getId(),ValueType.i32);
-               // buildFactory.createBinaryInst(currentBasicBlock,value1,value2,user,OpCode.sub);
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())-Integer.parseInt(value2.getName())));
-//                return user;
+                return buildFactory.createConst(Integer.toString(temp1-temp2));
             }
             else if (op == OpCode.mul) {
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())*Integer.parseInt(value2.getName())));
+                return buildFactory.createConst(Integer.toString(temp1*temp2));
             }
             else if (op == OpCode.mod){
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())%Integer.parseInt(value2.getName())));
+                return buildFactory.createConst(Integer.toString(temp1%temp2));
             }
             else{
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())/Integer.parseInt(value2.getName())));
+                return buildFactory.createConst(Integer.toString(temp1/temp2));
             }
         }
         else {
@@ -55,27 +98,7 @@ public class Generator {
             return user;
         }
     }
-    public Value addBinaryInstruction(Value value1, Value value2, OpCode op,boolean isGlobal) {
-        if (value1 instanceof GlobalVar){
-            int temp1=((GlobalVar) value1).getNum();
-        }
-            if (op==OpCode.add){
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())+Integer.parseInt(value2.getName())));
-            }
-            else if (op == OpCode.sub) {
-                User user = new User(buildFactory.getId(),ValueType.i32);
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())-Integer.parseInt(value2.getName())));
-            }
-            else if (op == OpCode.mul) {
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())*Integer.parseInt(value2.getName())));
-            }
-            else if (op == OpCode.mod){
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())%Integer.parseInt(value2.getName())));
-            }
-            else{
-                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())/Integer.parseInt(value2.getName())));
-            }
-    }
+
     public void start(CompUnitNode compUnitNode){
         for (DeclNode declNode: compUnitNode.getDeclNodes()){
             handleDecl(declNode);
@@ -85,12 +108,28 @@ public class Generator {
     }
 
     private void handleMainFunc(MainFuncDefNode mainFuncDefNode) {
-       Function function=new Function("main", DataType.i32);
-       currentModule.addFunction(function);
-       BasicBlock block=new BasicBlock();
-       currentBasicBlock=block;
-       function.addBasicBlock(block);
-       handleBlock(mainFuncDefNode.getBlockNode());
+        Function getint= new Function("getint",DataType.i32);
+        Function putint= new Function("putint",DataType.VOID);
+        putint.addParameter(new Parameter(DataType.i32));
+        Function putch= new Function("putch",DataType.VOID);
+        putch.addParameter(new Parameter(DataType.i32));
+        Function putstr= new Function("putstr",DataType.VOID);
+        putstr.addParameter(new Parameter(DataType.i8_));
+        currentModule.addFunction(getint);
+        currentModule.addFunction(putint);
+        currentModule.addFunction(putch);
+        currentModule.addFunction(putstr);
+        functionList.add(getint);
+        functionList.add(putint);
+        functionList.add(putch);
+        functionList.add(putstr);
+        Function function=new Function("main", DataType.i32);
+        function.setDefined();
+        currentModule.addFunction(function);
+        BasicBlock block=new BasicBlock();
+        currentBasicBlock=block;
+        function.addBasicBlock(block);
+        handleBlock(mainFuncDefNode.getBlockNode());
     }
 
     private void handleBlock(BlockNode blockNode) {
@@ -128,12 +167,19 @@ public class Generator {
         //LVal
         else if(stmtnode.getLvalnode() != null){
             //LVal '=' Exp ';'
-            Value tempValue=handleLVal(stmtnode.getLvalnode());
             if (stmtnode.getExpNode() != null){
-                Value initValue=handleExp(stmtnode.getExpNode());
-                buildFactory.createStoreInst(currentBasicBlock,initValue,tempValue);
+                Value tempValue=handleLVal(stmtnode.getLvalnode(),true);
+                if (stmtnode.getExpNode() != null){
+                    Value initValue=handleExp(stmtnode.getExpNode());
+                    buildFactory.createStoreInst(currentBasicBlock,initValue,tempValue);
+                }
             }
+
             //| LVal '=' 'getint''('')'';'
+            else{
+                Value tempValue=handleLVal(stmtnode.getLvalnode(),true);
+                buildFactory.createCallInst(currentBasicBlock,functionList.);
+            }
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
         else if(stmtnode.getIftk() != null){
@@ -229,20 +275,29 @@ public class Generator {
             return handleLVal(primaryExpNode.getlValNode());
         }
         else{
-            return null;
+            return handleExp(primaryExpNode.getExpNode());
         }
     }
 
     private Value handleLVal(LValNode lValNode) {
-        //LVal → Ident {'[' Exp ']'}
-        if (lValNode.getExpNodes().size()==0){
+        //LVal → Ident {'[' Exp ']'}'
+        if (currentBasicBlock == null){
             return currentValueTable.searchValue(lValNode.getIdent().getValue());
+        }
+        if (lValNode.getExpNodes().size()==0){
+            Value value=currentValueTable.searchValue(lValNode.getIdent().getValue());
+            User user=new User(buildFactory.getId(), value.getType());
+            buildFactory.createLoadInst(currentBasicBlock,user,value);
+            return user;
         }
         else{
             return null;
         }
     }
-
+    private Value handleLVal(LValNode lvalNode,Boolean left){
+        Value value=currentValueTable.searchValue(lvalNode.getIdent().getValue());
+        return value;
+    }
     private Value handleNumber(NumberNode numberNode) {
         return  buildFactory.createConst(numberNode.getNumber().getValue());
 

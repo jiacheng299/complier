@@ -1,155 +1,40 @@
-INTTK int
-<FuncType>
-IDENFR func1
-LPARENT (
-INTTK int
-IDENFR a
-<FuncFParam>
-<FuncFParams>
-RPARENT )
-LBRACE {
-IFTK if
-LPARENT (
-IDENFR a
-<LVal>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<RelExp>
-<EqExp>
-EQL ==
-INTCON 0
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<RelExp>
-<EqExp>
-<LAndExp>
-<LOrExp>
-OR ||
-IDENFR a
-<LVal>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<RelExp>
-<EqExp>
-EQL ==
-INTCON 1
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<RelExp>
-<EqExp>
-<LAndExp>
-<LOrExp>
-<Cond>
-RPARENT )
-RETURNTK return
-INTCON 1
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-SEMICN ;
-<Stmt>
-<Stmt>
-RETURNTK return
-IDENFR func1
-LPARENT (
-IDENFR a
-<LVal>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-MINU -
-INTCON 1
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-<FuncRParams>
-RPARENT )
-<UnaryExp>
-<MulExp>
-<AddExp>
-PLUS +
-IDENFR func1
-LPARENT (
-IDENFR a
-<LVal>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-MINU -
-INTCON 2
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-<FuncRParams>
-RPARENT )
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-SEMICN ;
-<Stmt>
-RBRACE }
-<Block>
-<FuncDef>
-INTTK int
-MAINTK main
-LPARENT (
-RPARENT )
-LBRACE {
-PRINTFTK printf
-LPARENT (
-STRCON "%d"
-COMMA ,
-IDENFR func1
-LPARENT (
-INTCON 5
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-<FuncRParams>
-RPARENT )
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-RPARENT )
-SEMICN ;
-<Stmt>
-RETURNTK return
-INTCON 0
-<Number>
-<PrimaryExp>
-<UnaryExp>
-<MulExp>
-<AddExp>
-<Exp>
-SEMICN ;
-<Stmt>
-RBRACE }
-<Block>
-<MainFuncDef>
-<CompUnit>
+@a = dso_local global i32 1
+@b = dso_local global i32 2
+@c = dso_local global i32 3
+declare i32 @getint()
+declare void @putint(i32)
+declare void @putch(i32)
+define i32 @main(){
+;<label>:0:
+    %1 = alloca i32
+    %2 = load i32, i32* @c
+    %3 = add i32 4, %2
+    store i32 %3, i32* %1
+    %4 = alloca i32
+    %5 = load i32, i32* %1
+    %6 = mul i32 5, %5
+    store i32 %6, i32* %4
+    %7 = load i32, i32* @a
+    %8 = add i32 %7, 5
+    store i32 %8, i32* @a
+    %9 = alloca i32
+    %10 = load i32, i32* @a
+    %11 = mul i32 %10, 2
+    store i32 %11, i32* %9
+    %12 = load i32, i32* %9
+    store i32 %12, i32* @a
+    %13 = alloca i32
+    store i32 20, i32* %13
+    %14 = load i32, i32* %4
+    %15 = load i32, i32* @a
+    %16 = mul i32 %15, 20
+    %17 = add i32 %14, %16
+    store i32 %17, i32* %4
+    %18 = alloca i32
+    store i32 10, i32* %18
+    %19 = load i32, i32* %4
+    %20 = load i32, i32* %18
+    %21 = mul i32 %19, %20
+    ret i32 %21
+}
+
