@@ -21,4 +21,13 @@ public class ValueTable {
     public void addValue(String name,Value value){
         valueHashMap.put(name,value);
     }
+    public Value searchValue(String name){
+        if (this.valueHashMap.containsKey(name)){
+            return this.valueHashMap.get(name);
+        }
+        else{
+            if (this.father==null){return null;}
+            else return this.father.searchValue(name);
+        }
+    }
 }

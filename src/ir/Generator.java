@@ -55,6 +55,27 @@ public class Generator {
             return user;
         }
     }
+    public Value addBinaryInstruction(Value value1, Value value2, OpCode op,boolean isGlobal) {
+        if (value1 instanceof GlobalVar){
+            int temp1=((GlobalVar) value1).getNum();
+        }
+            if (op==OpCode.add){
+                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())+Integer.parseInt(value2.getName())));
+            }
+            else if (op == OpCode.sub) {
+                User user = new User(buildFactory.getId(),ValueType.i32);
+                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())-Integer.parseInt(value2.getName())));
+            }
+            else if (op == OpCode.mul) {
+                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())*Integer.parseInt(value2.getName())));
+            }
+            else if (op == OpCode.mod){
+                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())%Integer.parseInt(value2.getName())));
+            }
+            else{
+                return buildFactory.createConst(Integer.toString(Integer.parseInt(value1.getName())/Integer.parseInt(value2.getName())));
+            }
+    }
     public void start(CompUnitNode compUnitNode){
         for (DeclNode declNode: compUnitNode.getDeclNodes()){
             handleDecl(declNode);
@@ -107,6 +128,11 @@ public class Generator {
         //LVal
         else if(stmtnode.getLvalnode() != null){
             //LVal '=' Exp ';'
+            Value tempValue=handleLVal(stmtnode.getLvalnode());
+            if (stmtnode.getExpNode() != null){
+                Value initValue=handleExp(stmtnode.getExpNode());
+                buildFactory.createStoreInst(currentBasicBlock,initValue,tempValue);
+            }
             //| LVal '=' 'getint''('')'';'
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
@@ -200,7 +226,17 @@ public class Generator {
             return handleNumber(primaryExpNode.getNumberNode());
         }
         else if (primaryExpNode.getlValNode() != null) {
+            return handleLVal(primaryExpNode.getlValNode());
+        }
+        else{
             return null;
+        }
+    }
+
+    private Value handleLVal(LValNode lValNode) {
+        //LVal → Ident {'[' Exp ']'}
+        if (lValNode.getExpNodes().size()==0){
+            return currentValueTable.searchValue(lValNode.getIdent().getValue());
         }
         else{
             return null;
