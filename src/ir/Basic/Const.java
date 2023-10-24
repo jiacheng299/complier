@@ -1,6 +1,5 @@
 package ir.Basic;
 
-import ir.Type.DataType;
 import ir.Type.ValueType;
 import ir.Value;
 

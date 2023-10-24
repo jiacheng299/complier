@@ -5,16 +5,14 @@ import ir.Basic.BasicBlock;
 import ir.Basic.Const;
 import ir.Basic.Function;
 import ir.Basic.GlobalVar;
+import ir.Instruction.CallInstruction;
 import ir.Instruction.OpCode;
-import ir.Instruction.RetInstruction;
-import ir.Type.DataType;
 import ir.Type.ValueType;
 import node.*;
 import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
 
 import java.util.HashMap;
-import java.util.List;
 
 public class Generator {
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
@@ -108,22 +106,22 @@ public class Generator {
     }
 
     private void handleMainFunc(MainFuncDefNode mainFuncDefNode) {
-        Function getint= new Function("getint",DataType.i32);
-        Function putint= new Function("putint",DataType.VOID);
-        putint.addParameter(new Parameter(DataType.i32));
-        Function putch= new Function("putch",DataType.VOID);
-        putch.addParameter(new Parameter(DataType.i32));
-        Function putstr= new Function("putstr",DataType.VOID);
-        putstr.addParameter(new Parameter(DataType.i8_));
+        Function getint= new Function("getint",ValueType.i32);
+        Function putint= new Function("putint",ValueType.VOID);
+        putint.addParameter(new Parameter(ValueType.i32));
+        Function putch= new Function("putch",ValueType.VOID);
+        putch.addParameter(new Parameter(ValueType.i32));
+        Function putstr= new Function("putstr",ValueType.VOID);
+        putstr.addParameter(new Parameter(ValueType.i8_));
         currentModule.addFunction(getint);
         currentModule.addFunction(putint);
         currentModule.addFunction(putch);
         currentModule.addFunction(putstr);
-        functionList.add(getint);
-        functionList.add(putint);
-        functionList.add(putch);
-        functionList.add(putstr);
-        Function function=new Function("main", DataType.i32);
+        functionList.put("getint",getint);
+        functionList.put("putint",putint);
+        functionList.put("putch",putch);
+        functionList.put("putstr",putstr);
+        Function function=new Function("main", ValueType.i32);
         function.setDefined();
         currentModule.addFunction(function);
         BasicBlock block=new BasicBlock();
@@ -154,10 +152,10 @@ public class Generator {
         if (stmtnode.getReturntk()!=null) {
             if (stmtnode.getExpNode()!=null) {
                 Value value=handleExp(stmtnode.getExpNode());
-                buildFactory.createRetInst(currentBasicBlock,value,DataType.i32);
+                buildFactory.createRetInst(currentBasicBlock,value,ValueType.i32);
             }
             else{
-                buildFactory.createRetInst(currentBasicBlock,new Value(),DataType.VOID);
+                buildFactory.createRetInst(currentBasicBlock,new Value(),ValueType.VOID);
             }
         }
         //| Block
@@ -178,7 +176,9 @@ public class Generator {
             //| LVal '=' 'getint''('')'';'
             else{
                 Value tempValue=handleLVal(stmtnode.getLvalnode(),true);
-                buildFactory.createCallInst(currentBasicBlock,functionList.);
+                Function getint=functionList.get("getint");
+                User user=new User(buildFactory.getId(),getint.getType());
+                buildFactory.createCallInst(currentBasicBlock,functionList.get("getint"),user);
             }
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
@@ -195,7 +195,26 @@ public class Generator {
         }
         //| 'printf''('FormatString{','Exp}')'';'
         else if(stmtnode.getPrintftk()!=null){
+            int expIndex=0;
+            String str=stmtnode.getFormatStringtk().getValue();
+            for (int i=0;i<str.length();i++){
+                if(str.charAt(i)=='%'){
+                 //出现%说明有一个对应的exp,对exp进行一个处理
+                    i++;
+                    //出现的为int，可以再增加新的类型
+                    if(str.charAt(i)=='d'){
+                        Value tempValue=handleExp(stmtnode.getExpNodes().get(i));
 
+                    }
+                }
+                else{
+                    User user=new User(buildFactory.getId(),functionList.get("putch").getType());
+
+                    CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putch"),user);
+                    callInstruction.addParam(new Value((str.charAt(i)-0),ValueType.i32));
+                }
+
+            }
         }
         //| [Exp] ';'
         else{

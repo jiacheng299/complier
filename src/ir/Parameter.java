@@ -1,16 +1,16 @@
 package ir;
 
-import ir.Type.DataType;
+import ir.Type.ValueType;
 
 public class Parameter {
-    protected DataType dataType;
+    protected ValueType dataType;
 
-    public Parameter(DataType dataType) {
+    public Parameter(ValueType dataType) {
         this.dataType = dataType;
     }
 
     public void print() {
-        if (dataType==DataType.i8_){
+        if (dataType==ValueType.i8_){
             System.out.print("i8*");
         }
         else System.out.print(dataType);

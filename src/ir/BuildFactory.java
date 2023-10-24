@@ -5,7 +5,6 @@ import ir.Basic.Const;
 import ir.Basic.Function;
 import ir.Basic.GlobalVar;
 import ir.Instruction.*;
-import ir.Type.DataType;
 import ir.Type.ValueType;
 
 public class BuildFactory {
@@ -22,7 +21,7 @@ public class BuildFactory {
     public static BuildFactory getBuildFactory(){
         return buildFactory;
     }
-    public void createRetInst(BasicBlock block, Value value, DataType type){
+    public void createRetInst(BasicBlock block, Value value, ValueType type){
         RetInstruction retInst = new RetInstruction(value,type);
         block.addInstruction(retInst);
     }
@@ -52,8 +51,10 @@ public class BuildFactory {
         LoadInstruction loadInstruction = new LoadInstruction(value1, value2);
         basicBlock.addInstruction(loadInstruction);
     }
-    public void createCallInst(BasicBlock basicBlock, Function function, Value value){
+    public CallInstruction createCallInst(BasicBlock basicBlock, Function function, Value value){
         CallInstruction callInstruction = new CallInstruction(function,value);
         basicBlock.addInstruction(callInstruction);
+        return callInstruction;
     }
+
 }
