@@ -22,6 +22,7 @@ public class BasicBlock {
     }
     public void print(){
         for (BaseInstruction instruction : instructions){
+            System.out.print("    ");
             instruction.print();
         }
     }

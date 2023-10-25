@@ -17,12 +17,13 @@ public class CallInstruction extends BaseInstruction{
         funcRParams.add(value);
     }
     public void print(){
-        System.out.println(result.getName()+" = call "+function.getType()+" @"+function.getName()+"(");
+        System.out.print(result.getName()+" = call "+function.getType()+" @"+function.getName()+"(");
         for (int i=0;i<funcRParams.size();i++){
             if(i!=0){
-                System.out.println(",");
+                System.out.print(",");
             }
-            System.out.println(funcRParams.get(i).getType()+" "+funcRParams.get(i).getName());
+            System.out.print(funcRParams.get(i).getType()+" "+funcRParams.get(i).getName());
         }
+        System.out.println(")");
     }
 }

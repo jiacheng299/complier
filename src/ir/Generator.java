@@ -28,6 +28,7 @@ public class Generator {
     private static Module currentModule=Module.getModule();
     private BasicBlock currentBasicBlock=null;
     public void Generator(){}
+
     public Value addBinaryInstruction(Value value1, Value value2, OpCode op) {
         if(currentBasicBlock==null){
             if ((value1 instanceof Const||value1 instanceof GlobalVar )&& (value2 instanceof Const||value2 instanceof GlobalVar)){
@@ -98,11 +99,30 @@ public class Generator {
     }
 
     public void start(CompUnitNode compUnitNode){
+        //CompUnit    → {Decl} {FuncDef} MainFuncDef
         for (DeclNode declNode: compUnitNode.getDeclNodes()){
             handleDecl(declNode);
         }
+        for (FuncDefNode funcDefNode: compUnitNode.getFuncDefNodes()){
+            handleFuncDef(funcDefNode);
+        }
         handleMainFunc(compUnitNode.getMainFuncDefNode());
        // System.out.println(irCode);
+    }
+
+    private void handleFuncDef(FuncDefNode funcDefNode) {
+        //FuncDef     → FuncType Ident '(' [FuncFParams] ')' Block
+        ValueType valueType=handleFuncType(funcDefNode.getFuncTypeNode());
+    }
+
+    private ValueType handleFuncType(FuncTypeNode funcTypeNode) {
+        //FuncType    → 'void' | 'int'
+        if (funcTypeNode.getVoidtk()!=null){
+            return ValueType.VOID;
+        }
+        else {
+            return ValueType.i32;
+        }
     }
 
     private void handleMainFunc(MainFuncDefNode mainFuncDefNode) {
@@ -179,6 +199,7 @@ public class Generator {
                 Function getint=functionList.get("getint");
                 User user=new User(buildFactory.getId(),getint.getType());
                 buildFactory.createCallInst(currentBasicBlock,functionList.get("getint"),user);
+                buildFactory.createStoreInst(currentBasicBlock,user,tempValue);
             }
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
@@ -198,20 +219,23 @@ public class Generator {
             int expIndex=0;
             String str=stmtnode.getFormatStringtk().getValue();
             for (int i=0;i<str.length();i++){
+                if (str.charAt(i)=='"') continue;
                 if(str.charAt(i)=='%'){
                  //出现%说明有一个对应的exp,对exp进行一个处理
                     i++;
                     //出现的为int，可以再增加新的类型
                     if(str.charAt(i)=='d'){
-                        Value tempValue=handleExp(stmtnode.getExpNodes().get(i));
-
+                        Value tempValue=handleExp(stmtnode.getExpNodes().get(expIndex));
+                        User user= new User(buildFactory.getId(), ValueType.i32);
+                        CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putint"),user);
+                        callInstruction.addParam(tempValue);
+                        expIndex++;
                     }
                 }
                 else{
                     User user=new User(buildFactory.getId(),functionList.get("putch").getType());
-
                     CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putch"),user);
-                    callInstruction.addParam(new Value((str.charAt(i)-0),ValueType.i32));
+                    callInstruction.addParam(new Value(Integer.toString(str.charAt(i)-0),ValueType.i32));
                 }
 
             }
