@@ -30,4 +30,11 @@ public class ValueTable {
             else return this.father.searchValue(name);
         }
     }
+    public ValueTable enterNextTbale(){
+        //每次进入一个新的block相当于要换一个作用域
+        ValueTable valueTable=new ValueTable();
+        this.sons.add(valueTable);
+        valueTable.father=this;
+        return valueTable;
+    }
 }

@@ -29,6 +29,9 @@ public class Function extends Value{
         this.entryBlock = null;
         this.exitBlock = null;
     }
+    public List<Parameter> getParameters(){
+        return parameters;
+    }
     public void addFunction(String name,Function function) {Function.functions.put(name,function);}
     public void setDefined(){
         this.isDefined=true;
@@ -66,9 +69,9 @@ public class Function extends Value{
     public void print(){
         if (this.isDefined==false){
             if (returnType==ValueType.i32)
-                System.out.print("declare "+returnType+" @"+name+"(");
+                System.out.print("declare "+returnType.toString().toLowerCase()+" @"+name+"(");
             else if(returnType==ValueType.VOID)
-                System.out.print("declare "+returnType+" @"+name+"(");
+                System.out.print("declare "+returnType.toString().toLowerCase()+" @"+name+"(");
             for(int i=0;i<parameters.size();i++){
                 parameters.get(i).print();
                 if (i!= parameters.size()-1){
@@ -83,7 +86,7 @@ public class Function extends Value{
             if (returnType==ValueType.i32)
                 System.out.print("define dso_local "+returnType+" @"+name+"(");
             else if(returnType==ValueType.VOID)
-                System.out.print("define dso_local "+returnType+" @"+name+"(");
+                System.out.print("define dso_local "+returnType.toString().toLowerCase()+" @"+name+"(");
             for(int i=0;i<parameters.size();i++){
                 parameters.get(i).print();
                 if (i!= parameters.size()-1){

@@ -56,5 +56,13 @@ public class BuildFactory {
         basicBlock.addInstruction(callInstruction);
         return callInstruction;
     }
-
+    public CallInstruction createCallInst(BasicBlock basicBlock, Function function){
+        CallInstruction callInstruction = new CallInstruction(function);
+        basicBlock.addInstruction(callInstruction);
+        return callInstruction;
+    }
+    public void resetId0(){
+        this.id=0;
+    }
+    public void resetId1(){this.id=1;}
 }

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Value {
-    protected String name;
+    protected String name=null;
     protected Integer num;
     protected ValueType type;
     protected boolean isConst=false;

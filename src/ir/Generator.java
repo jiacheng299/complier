@@ -13,10 +13,11 @@ import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
 
 import java.util.HashMap;
+import java.util.List;
 
 public class Generator {
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
-    private SymbolInfo currentFunction=null;
+    private Function currentFunction=null;
     private SymbolInfo returnNum=null;
     private HashMap<String,Function> functionList= Function.getFunctions();
     private ValueTable currentValueTable=new ValueTable();
@@ -100,32 +101,6 @@ public class Generator {
 
     public void start(CompUnitNode compUnitNode){
         //CompUnit    → {Decl} {FuncDef} MainFuncDef
-        for (DeclNode declNode: compUnitNode.getDeclNodes()){
-            handleDecl(declNode);
-        }
-        for (FuncDefNode funcDefNode: compUnitNode.getFuncDefNodes()){
-            handleFuncDef(funcDefNode);
-        }
-        handleMainFunc(compUnitNode.getMainFuncDefNode());
-       // System.out.println(irCode);
-    }
-
-    private void handleFuncDef(FuncDefNode funcDefNode) {
-        //FuncDef     → FuncType Ident '(' [FuncFParams] ')' Block
-        ValueType valueType=handleFuncType(funcDefNode.getFuncTypeNode());
-    }
-
-    private ValueType handleFuncType(FuncTypeNode funcTypeNode) {
-        //FuncType    → 'void' | 'int'
-        if (funcTypeNode.getVoidtk()!=null){
-            return ValueType.VOID;
-        }
-        else {
-            return ValueType.i32;
-        }
-    }
-
-    private void handleMainFunc(MainFuncDefNode mainFuncDefNode) {
         Function getint= new Function("getint",ValueType.i32);
         Function putint= new Function("putint",ValueType.VOID);
         putint.addParameter(new Parameter(ValueType.i32));
@@ -141,21 +116,102 @@ public class Generator {
         functionList.put("putint",putint);
         functionList.put("putch",putch);
         functionList.put("putstr",putstr);
-        Function function=new Function("main", ValueType.i32);
+        for (DeclNode declNode: compUnitNode.getDeclNodes()){
+            handleDecl(declNode);
+        }
+        for (FuncDefNode funcDefNode: compUnitNode.getFuncDefNodes()){
+            handleFuncDef(funcDefNode);
+        }
+        handleMainFunc(compUnitNode.getMainFuncDefNode());
+       // System.out.println(irCode);
+    }
+
+    private void handleFuncDef(FuncDefNode funcDefNode) {
+        //FuncDef     → FuncType Ident '(' [FuncFParams] ')' Block
+        buildFactory.resetId0();
+        ValueType valueType=handleFuncType(funcDefNode.getFuncTypeNode());
+        String name=funcDefNode.getIdent().getValue();
+        Function function=new Function(name,valueType);
+        currentFunction=function;
+        BasicBlock block=new BasicBlock();
+        function.addBasicBlock(block);
+        currentBasicBlock=block;
+        currentValueTable=currentValueTable.enterNextTbale();
+        if (funcDefNode.getFuncFParamsNode()!=null) {
+            handleFuncFParams(funcDefNode.getFuncFParamsNode(),function);
+        }
+        else{
+            buildFactory.resetId1();
+        }
+        currentModule.addFunction(function);
+        functionList.put(name,function);
         function.setDefined();
+
+        handleBlock(funcDefNode.getBlockNode());
+    }
+
+    private void handleFuncFParams(FuncFParamsNode funcFParamsNode, Function function) {
+        //FuncFParams → FuncFParam { ',' FuncFParam }
+        for (int i=0;i<funcFParamsNode.getFuncFParamsNodes().size();i++) {
+            Parameter parameter=handleFuncFParam(funcFParamsNode.getFuncFParamsNodes().get(i));
+            function.addParameter(parameter);
+        }
+        //把参数表中的参数都加载到内存空间中
+        //给这个基本块一个编号，由于不知道有什么用，我先简单把编号加1，后期记得改
+        buildFactory.getId();
+        List<Parameter> parameters=function.getParameters();
+        for (int i=0;i<parameters.size();i++) {
+            User user=new User(buildFactory.getId(), parameters.get(i).getType());
+            buildFactory.createAllocateInst(currentBasicBlock,user,parameters.get(i));
+            buildFactory.createStoreInst(currentBasicBlock,parameters.get(i),user);
+            currentValueTable.addValue(funcFParamsNode.getFuncFParamsNodes().get(i).getIdent().getValue(),user);
+        }
+    }
+
+    private Parameter handleFuncFParam(FuncFParamNode funcFParamNode) {
+        //FuncFParam → BType Ident ['[' ']' { '[' ConstExp ']' }]
+        //传入的是普通变量
+        if (funcFParamNode.getLbracks().size()==0){
+            ValueType valueType =handleBtype(funcFParamNode.getBtypenode());
+            String name=funcFParamNode.getIdent().getValue();
+            Parameter parameter=new Parameter(buildFactory.getId(),valueType);
+            currentValueTable.addValue(name,parameter);
+            return parameter;
+        }
+        //一维数组
+        else if (funcFParamNode.getLbracks().size() == 1){
+            return null;
+        }//二维数组
+        else{
+            return null;
+        }
+    }
+
+    private ValueType handleFuncType(FuncTypeNode funcTypeNode) {
+        //FuncType    → 'void' | 'int'
+        if (funcTypeNode.getVoidtk()!=null){
+            return ValueType.VOID;
+        }
+        else {
+            return ValueType.i32;
+        }
+    }
+
+    private void handleMainFunc(MainFuncDefNode mainFuncDefNode) {
+        Function function=new Function("main", ValueType.i32);
+        currentFunction=function;
+        function.setDefined();
+        buildFactory.resetId1();
         currentModule.addFunction(function);
         BasicBlock block=new BasicBlock();
         currentBasicBlock=block;
         function.addBasicBlock(block);
+        currentValueTable=currentValueTable.enterNextTbale();
         handleBlock(mainFuncDefNode.getBlockNode());
     }
 
     private void handleBlock(BlockNode blockNode) {
-        //每次进入一个新的block相当于要换一个作用域
-        ValueTable valueTable=new ValueTable();
-        currentValueTable.sons.add(valueTable);
-        valueTable.father=currentValueTable;
-        currentValueTable=valueTable;
+
         for (BlockItemNode blockItem : blockNode.getBlockItemNodes()){
             handleBlockItem(blockItem);
         }
@@ -180,6 +236,7 @@ public class Generator {
         }
         //| Block
         else if (stmtnode.getBlockNode()!=null){
+            currentValueTable=currentValueTable.enterNextTbale();
             handleBlock(stmtnode.getBlockNode());
         }
         //LVal
@@ -204,7 +261,15 @@ public class Generator {
         }
         //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
         else if(stmtnode.getIftk() != null){
-
+            BasicBlock ifblock=new BasicBlock();
+            BasicBlock outblock=new BasicBlock();
+            BasicBlock elseblock=new BasicBlock();
+            currentFunction.addBasicBlock(ifblock);
+            currentFunction.addBasicBlock(outblock);
+            if (stmtnode.getElsetk() != null) {
+                currentFunction.addBasicBlock(elseblock);
+            }
+            handleCond(stmtnode.getCondNode(),ifblock,elseblock,outblock);
         }
         //| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
         else if(stmtnode.getFortk() != null){
@@ -226,15 +291,13 @@ public class Generator {
                     //出现的为int，可以再增加新的类型
                     if(str.charAt(i)=='d'){
                         Value tempValue=handleExp(stmtnode.getExpNodes().get(expIndex));
-                        User user= new User(buildFactory.getId(), ValueType.i32);
-                        CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putint"),user);
+                        CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putint"));
                         callInstruction.addParam(tempValue);
                         expIndex++;
                     }
                 }
                 else{
-                    User user=new User(buildFactory.getId(),functionList.get("putch").getType());
-                    CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putch"),user);
+                    CallInstruction callInstruction=buildFactory.createCallInst(currentBasicBlock,functionList.get("putch"));
                     callInstruction.addParam(new Value(Integer.toString(str.charAt(i)-0),ValueType.i32));
                 }
 
@@ -242,8 +305,19 @@ public class Generator {
         }
         //| [Exp] ';'
         else{
-
+            if (stmtnode.getExpNode()!=null){
+                handleExp(stmtnode.getExpNode());
+            }
         }
+    }
+
+    private void handleCond(CondNode condNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
+        handleLOrExp(condNode, ifblock, elseblock, outblock);
+    }
+
+    private void handleLOrExp(CondNode condNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
+        //LOrExp → LAndExp {'||' LAndExp}
+
     }
 
     private Value handleExp(ExpNode expNode) {
@@ -291,7 +365,24 @@ public class Generator {
         if (unaryExpNode.getPrimaryExpNode()!=null){
             return handleParimaryExp(unaryExpNode.getPrimaryExpNode());
         } else if (unaryExpNode.getIdent()!=null) {
-            return null;
+            Function function=functionList.get(unaryExpNode.getIdent().getValue());
+            CallInstruction callInstruction=null;
+            User user=null;
+            if (function.getType()!=ValueType.VOID){
+                user=new User(buildFactory.getId(), function.getType());
+               callInstruction=buildFactory.createCallInst(currentBasicBlock,function,user);
+
+            }
+            else{
+                callInstruction = buildFactory.createCallInst(currentBasicBlock,function);
+            }
+            if (unaryExpNode.getFuncRParamsNode() != null){
+                for (ExpNode expNode : unaryExpNode.getFuncRParamsNode().getExpNodes()){
+                    Value value =handleExp(expNode);
+                    callInstruction.addParam(value);
+                }
+            }
+            return user;
         }
         else{
             if (unaryExpNode.getUnaryOpNode().getMinu()!=null) {
@@ -447,8 +538,11 @@ public class Generator {
         return handleAddExp(constExpNode.getAddExpNode());
     }
 
-    private void handleBtype(BTypeNode bTypeNode) {
-
+    private ValueType handleBtype(BTypeNode bTypeNode) {
+        if (bTypeNode.getInttk()!=null){
+            return ValueType.i32;
+        }
+        return null;
     }
 
 }
