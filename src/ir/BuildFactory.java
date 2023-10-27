@@ -65,4 +65,13 @@ public class BuildFactory {
         this.id=0;
     }
     public void resetId1(){this.id=1;}
+    public void createBranchInst(BasicBlock basicBlock,Value cond,Value trueblock,Value falseblock){
+        BranchInstruction branchInst = new BranchInstruction(cond,trueblock,falseblock);
+        basicBlock.addInstruction(branchInst);
+    }
+
+    public void createIcmpInst(BasicBlock currentBasicBlock, User user, Value value1, Value value2,OpCode opcode    ) {
+        IcmpInstruction icmpInstruction=new IcmpInstruction(user,value1,value2,opcode);
+        currentBasicBlock.addInstruction(icmpInstruction);
+    }
 }

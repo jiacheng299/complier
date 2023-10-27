@@ -312,12 +312,107 @@ public class Generator {
     }
 
     private void handleCond(CondNode condNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
-        handleLOrExp(condNode, ifblock, elseblock, outblock);
+        handleLOrExp(condNode.getlOrExpNode(), ifblock, elseblock, outblock);
     }
 
-    private void handleLOrExp(CondNode condNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
+    private void handleLOrExp(LOrExpNode lOrExpNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
         //LOrExp → LAndExp {'||' LAndExp}
+        for (int i=0;i<lOrExpNode.getlAndExpNodes().size();i++) {
+            BasicBlock judge=null;
+            if (i!=lOrExpNode.getlAndExpNodes().size()-1) {
+                judge=new BasicBlock();
+            }
+            Value value=handleLandExp(lOrExpNode.getlAndExpNodes().get(i),ifblock,elseblock,outblock,judge);
+            BasicBlock falseBlock=null;
+            //如果这是最后一个或判断
+            if (i==lOrExpNode.getlAndExpNodes().size()-1){
+                falseBlock=elseblock==null?outblock:elseblock;
+            }
+            else{
+                judge.setName(buildFactory.getId());
+                falseBlock=judge;
+                currentFunction.addBasicBlock(judge);
+            }
+            buildFactory.createBranchInst(currentBasicBlock,value,ifblock,falseBlock);
+            if (i!=lOrExpNode.getlAndExpNodes().size()-1) currentBasicBlock=falseBlock;
+        }
+    }
 
+    private Value handleLandExp(LAndExpNode lAndExpNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock, BasicBlock nextblock) {
+    //LAndExp → EqExp { '&&' EqExp}
+        Value value=null;
+        for (int i=0;i<lAndExpNode.getEqExpNodes().size();i++) {
+            value=handleEqExp(lAndExpNode.getEqExpNodes().get(i));
+            //如果这是与判断的最后一个判断
+            BasicBlock trueblock=null;
+            BasicBlock falseblock=null;
+            BasicBlock judge=new BasicBlock();
+            if (i==lAndExpNode.getEqExpNodes().size()-1){
+                trueblock=ifblock;
+                //如果这是cond的最后一个判断
+                if (nextblock == null){
+                    falseblock=elseblock==null?outblock:elseblock;
+                }
+                else{
+                    falseblock=nextblock;
+                }
+            }
+            else{
+                trueblock=judge;
+                judge.setName(buildFactory.getId());
+                currentFunction.addBasicBlock(judge);
+                //如果接下来没有或判断，那么这里出错就直接去else或者out
+                if (nextblock == null){
+                    falseblock=elseblock==null?outblock : elseblock;
+                }
+                else{
+                    falseblock=nextblock;
+                }
+            }
+            buildFactory.createBranchInst(currentBasicBlock,value,trueblock,falseblock);
+            if (i!=lAndExpNode.getEqExpNodes().size()-1)currentBasicBlock=trueblock;
+        }
+        return value;
+    }
+
+    private Value handleEqExp(EqExpNode eqExpNode) {
+        //EqExp → RelExp {('==' | '!=') RelExp}
+        if (eqExpNode.getRelExpNodes().size()==1) return handleRelExp(eqExpNode.getRelExpNodes().get(0));
+        else{
+            Value value1=handleRelExp(eqExpNode.getRelExpNodes().get(0));
+            Value value2=handleRelExp(eqExpNode.getRelExpNodes().get(1));
+            OpCode opcode=OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(0).getType());
+            User user=new User(buildFactory.getId(), ValueType.i1);
+            buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
+            for (int i=2;i<eqExpNode.getRelExpNodes().size();i++){
+                value1=user;
+                value2=handleRelExp(eqExpNode.getRelExpNodes().get(i));
+                opcode=OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(i-1).getType());
+                user=new User(buildFactory.getId(), ValueType.i1);
+                buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
+            }
+            return user;
+        }
+    }
+
+    private Value handleRelExp(RelExpNode relExpNode) {
+        //RelExp → AddExp { ('<' | '>' | '<=' | '>=') AddExp}
+        if (relExpNode.getAddExpNodes().size()==1) return handleAddExp(relExpNode.getAddExpNodes().get(0));
+        else{
+            Value value1=handleAddExp(relExpNode.getAddExpNodes().get(0));
+            Value value2=handleAddExp(relExpNode.getAddExpNodes().get(1));
+            OpCode opcode=OpCode.Token2Op(relExpNode.getOps().get(0).getType());
+            User user=new User(buildFactory.getId(), ValueType.i1);
+            buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
+            for (int i=2;i<relExpNode.getAddExpNodes().size();i++){
+                value1=user;
+                value2=handleAddExp(relExpNode.getAddExpNodes().get(i));
+                opcode=OpCode.Token2Op(relExpNode.getOps().get(i-1).getType());
+                user=new User(buildFactory.getId(), ValueType.i1);
+                buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
+            }
+            return user;
+        }
     }
 
     private Value handleExp(ExpNode expNode) {

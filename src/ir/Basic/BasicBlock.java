@@ -2,11 +2,12 @@ package ir.Basic;
 
 import ir.Instruction.BaseInstruction;
 import ir.Instruction.Instruction;
+import ir.Value;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BasicBlock {
+public class BasicBlock extends Value {
     private List<BaseInstruction> instructions=new ArrayList<BaseInstruction>();
     private BasicBlock nextBlock;//后继block
     private BasicBlock jumpBlock;//前驱block
@@ -25,6 +26,9 @@ public class BasicBlock {
             System.out.print("    ");
             instruction.print();
         }
+    }
+    public void setName(String num){
+        this.name=num;
     }
     public void setNextBlock(BasicBlock block) {
         nextBlock = block;
