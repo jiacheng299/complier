@@ -69,9 +69,16 @@ public class BuildFactory {
         BranchInstruction branchInst = new BranchInstruction(cond,trueblock,falseblock);
         basicBlock.addInstruction(branchInst);
     }
-
+    public void createBranchInst(BasicBlock basicBlock,Value dest){
+        BranchInstruction branchInst = new BranchInstruction(dest);
+        basicBlock.addInstruction(branchInst);
+    }
     public void createIcmpInst(BasicBlock currentBasicBlock, User user, Value value1, Value value2,OpCode opcode    ) {
         IcmpInstruction icmpInstruction=new IcmpInstruction(user,value1,value2,opcode);
         currentBasicBlock.addInstruction(icmpInstruction);
+    }
+    public void createZextInst(BasicBlock currentBasicBlock,Value result,Value value,ValueType ty){
+        ZextInstruction zextInstruction=new ZextInstruction(result,value,ty);
+        currentBasicBlock.addInstruction(zextInstruction);
     }
 }

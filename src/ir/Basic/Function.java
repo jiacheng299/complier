@@ -6,9 +6,7 @@ import ir.Type.ValueType;
 import ir.Value;
 import ir.Variable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class Function extends Value{
     private String name;
@@ -16,6 +14,7 @@ public class Function extends Value{
     private List<Parameter> parameters;//参数列表
     private List<Variable> localVariables;//局部变量列表
     private List<BasicBlock> basicBlocks;//基本块列表
+
     private BasicBlock entryBlock;//入口block
     private BasicBlock exitBlock;//出口block
     private ValueType returnType;
@@ -28,6 +27,17 @@ public class Function extends Value{
         this.basicBlocks = new ArrayList<>();
         this.entryBlock = null;
         this.exitBlock = null;
+    }
+    public void sortBasicBlocks() {
+        Collections.sort(basicBlocks, new Comparator<BasicBlock>() {
+            @Override
+            public int compare(BasicBlock bb1, BasicBlock bb2) {
+                // 根据自定义的比较规则进行比较
+                return Integer.parseInt(bb1.getName().replaceAll("[^0-9]", ""))-
+                        Integer.parseInt(bb2.getName().replaceAll("[^0-9]", ""));
+
+            }
+        });
     }
     public List<Parameter> getParameters(){
         return parameters;
@@ -67,6 +77,7 @@ public class Function extends Value{
     }
 
     public void print(){
+        sortBasicBlocks();
         if (this.isDefined==false){
             if (returnType==ValueType.i32)
                 System.out.print("declare "+returnType.toString().toLowerCase()+" @"+name+"(");

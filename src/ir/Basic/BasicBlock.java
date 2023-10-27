@@ -13,6 +13,7 @@ public class BasicBlock extends Value {
     private BasicBlock jumpBlock;//前驱block
     public BasicBlock() {
     }
+
     public BasicBlock(List<BaseInstruction> instructions, BasicBlock nextBlock, BasicBlock jumpBlock) {
         this.instructions = instructions;
         this.nextBlock = nextBlock;
@@ -22,6 +23,7 @@ public class BasicBlock extends Value {
         instructions.add(instruction);
     }
     public void print(){
+        System.out.println(";<label>:"+name);
         for (BaseInstruction instruction : instructions){
             System.out.print("    ");
             instruction.print();

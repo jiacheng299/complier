@@ -12,6 +12,6 @@ public class IcmpInstruction extends BaseInstruction{
         this.op = op;
     }
     public void print(){
-        System.out.println(result.getName()+" = icmp "+op.toString()+value1.getType()+" "+value1.getName()+", "+value2.getName());
+        System.out.println(result.getName()+" = icmp "+op.toString()+" "+value1.getType()+" "+value1.getName()+", "+value2.getName());
     }
 }

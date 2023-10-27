@@ -141,7 +141,7 @@ public class Generator {
             handleFuncFParams(funcDefNode.getFuncFParamsNode(),function);
         }
         else{
-            buildFactory.resetId1();
+            currentBasicBlock.setName(buildFactory.getId());
         }
         currentModule.addFunction(function);
         functionList.put(name,function);
@@ -158,7 +158,7 @@ public class Generator {
         }
         //把参数表中的参数都加载到内存空间中
         //给这个基本块一个编号，由于不知道有什么用，我先简单把编号加1，后期记得改
-        buildFactory.getId();
+        currentBasicBlock.setName(buildFactory.getId());
         List<Parameter> parameters=function.getParameters();
         for (int i=0;i<parameters.size();i++) {
             User user=new User(buildFactory.getId(), parameters.get(i).getType());
@@ -201,9 +201,10 @@ public class Generator {
         Function function=new Function("main", ValueType.i32);
         currentFunction=function;
         function.setDefined();
-        buildFactory.resetId1();
+        buildFactory.resetId0();
         currentModule.addFunction(function);
         BasicBlock block=new BasicBlock();
+        block.setName(buildFactory.getId());
         currentBasicBlock=block;
         function.addBasicBlock(block);
         currentValueTable=currentValueTable.enterNextTbale();
@@ -263,13 +264,29 @@ public class Generator {
         else if(stmtnode.getIftk() != null){
             BasicBlock ifblock=new BasicBlock();
             BasicBlock outblock=new BasicBlock();
-            BasicBlock elseblock=new BasicBlock();
+            BasicBlock elseblock=null;
             currentFunction.addBasicBlock(ifblock);
-            currentFunction.addBasicBlock(outblock);
+
             if (stmtnode.getElsetk() != null) {
-                currentFunction.addBasicBlock(elseblock);
+                elseblock=new BasicBlock();
             }
             handleCond(stmtnode.getCondNode(),ifblock,elseblock,outblock);
+            //处理ifblock
+            ifblock.setName(buildFactory.getId());
+            currentBasicBlock=ifblock;
+            handleStmt(stmtnode.getStmtNodes().get(0));
+            buildFactory.createBranchInst(currentBasicBlock,outblock);
+            //如果有else
+            if (stmtnode.getElsetk()!=null){
+                elseblock.setName(buildFactory.getId());
+                currentBasicBlock=elseblock;
+                handleStmt(stmtnode.getStmtNodes().get(1));
+                currentFunction.addBasicBlock(elseblock);
+                buildFactory.createBranchInst(currentBasicBlock,outblock);
+            }
+            outblock.setName(buildFactory.getId());
+            currentBasicBlock=outblock;
+            currentFunction.addBasicBlock(outblock);
         }
         //| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
         else if(stmtnode.getFortk() != null){
@@ -324,16 +341,21 @@ public class Generator {
             }
             Value value=handleLandExp(lOrExpNode.getlAndExpNodes().get(i),ifblock,elseblock,outblock,judge);
             BasicBlock falseBlock=null;
+            if (value.getType()==ValueType.i32){
+                User user=new User(buildFactory.getId(),ValueType.i1);
+                buildFactory.createIcmpInst(currentBasicBlock,user,value,new Const("0"),OpCode.ne);
+                value=user;
+            }
             //如果这是最后一个或判断
             if (i==lOrExpNode.getlAndExpNodes().size()-1){
-                falseBlock=elseblock==null?outblock:elseblock;
+                falseBlock=(elseblock==null?outblock:elseblock);
             }
             else{
                 judge.setName(buildFactory.getId());
                 falseBlock=judge;
                 currentFunction.addBasicBlock(judge);
             }
-            buildFactory.createBranchInst(currentBasicBlock,value,ifblock,falseBlock);
+            if (!(lOrExpNode.getlAndExpNodes().get(i).getEqExpNodes().size()>1)) buildFactory.createBranchInst(currentBasicBlock,value,ifblock,falseBlock);
             if (i!=lOrExpNode.getlAndExpNodes().size()-1) currentBasicBlock=falseBlock;
         }
     }
@@ -341,8 +363,14 @@ public class Generator {
     private Value handleLandExp(LAndExpNode lAndExpNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock, BasicBlock nextblock) {
     //LAndExp → EqExp { '&&' EqExp}
         Value value=null;
+        if(lAndExpNode.getEqExpNodes().size()==1) return handleEqExp(lAndExpNode.getEqExpNodes().get(0));
         for (int i=0;i<lAndExpNode.getEqExpNodes().size();i++) {
             value=handleEqExp(lAndExpNode.getEqExpNodes().get(i));
+            if (value.getType()==ValueType.i32){
+                User user=new User(buildFactory.getId(),ValueType.i1);
+                buildFactory.createIcmpInst(currentBasicBlock,user,value,new Const("0"),OpCode.ne);
+                value=user;
+            }
             //如果这是与判断的最后一个判断
             BasicBlock trueblock=null;
             BasicBlock falseblock=null;
@@ -385,7 +413,7 @@ public class Generator {
             User user=new User(buildFactory.getId(), ValueType.i1);
             buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
             for (int i=2;i<eqExpNode.getRelExpNodes().size();i++){
-                value1=user;
+                value1=zext(user);
                 value2=handleRelExp(eqExpNode.getRelExpNodes().get(i));
                 opcode=OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(i-1).getType());
                 user=new User(buildFactory.getId(), ValueType.i1);
@@ -405,7 +433,7 @@ public class Generator {
             User user=new User(buildFactory.getId(), ValueType.i1);
             buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
             for (int i=2;i<relExpNode.getAddExpNodes().size();i++){
-                value1=user;
+                value1=zext(user);
                 value2=handleAddExp(relExpNode.getAddExpNodes().get(i));
                 opcode=OpCode.Token2Op(relExpNode.getOps().get(i-1).getType());
                 user=new User(buildFactory.getId(), ValueType.i1);
@@ -639,5 +667,13 @@ public class Generator {
         }
         return null;
     }
-
+    private Value zext(Value value){
+        if (value.getType()!=ValueType.i32){
+            value.setType(ValueType.i32);
+            User user=new User(buildFactory.getId(), ValueType.i32);
+            buildFactory.createZextInst(currentBasicBlock,user,value,ValueType.i32);
+            return user;
+        }
+        return value;
+    }
 }
