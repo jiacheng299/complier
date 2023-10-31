@@ -669,9 +669,9 @@ public class Generator {
     }
     private Value zext(Value value){
         if (value.getType()!=ValueType.i32){
-            value.setType(ValueType.i32);
             User user=new User(buildFactory.getId(), ValueType.i32);
             buildFactory.createZextInst(currentBasicBlock,user,value,ValueType.i32);
+            value.setType(ValueType.i32);
             return user;
         }
         return value;
