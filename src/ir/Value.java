@@ -9,8 +9,11 @@ public class Value {
     protected String name=null;
     protected Integer num;
     protected ValueType type;
+    protected String onearrayNum=null;
+    protected String twoarrayNum=null;
     protected boolean isConst=false;
     protected boolean isGlobal=false;
+    protected List<String> arrayNum=new ArrayList<>();
     private List<Use> uses;
     public Value(){}
     public Value(String name, ValueType type) {
@@ -21,11 +24,33 @@ public class Value {
     public void setType(ValueType type){
         this.type = type;
     }
+    public void setName(String name){this.name=name;}
     public ValueType getType() {return type;}
     public void addUse(Use use) {
         this.uses.add(use);
     }
     public String getName() {
         return name;
+    }
+    public void setOnearrayNum(String num){
+        this.onearrayNum=num;
+    }
+    public void setTwoarrayNum(String num){
+        this.twoarrayNum=num;
+    }
+    public String printArrayType() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        if (twoarrayNum != null) {
+            sb.append(String.valueOf((Integer.parseInt(onearrayNum) * Integer.parseInt(twoarrayNum))));
+        } else {
+            sb.append(onearrayNum);
+        }
+        sb.append(" x ");
+        sb.append("i32]");
+        return sb.toString();
+    }
+    public void setArrayNum(List<String> arrayNum){
+        this.arrayNum=arrayNum;
     }
 }

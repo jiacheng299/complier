@@ -1,6 +1,7 @@
 package ir.Instruction;
 
 import ir.Basic.Function;
+import ir.Type.ValueType;
 import ir.Value;
 
 import java.util.ArrayList;
@@ -27,7 +28,8 @@ public class CallInstruction extends BaseInstruction{
             if(i!=0){
                 System.out.print(",");
             }
-            System.out.print(funcRParams.get(i).getType()+" "+funcRParams.get(i).getName());
+            if (funcRParams.get(i).getType()== ValueType.i32_) System.out.print("i32* "+funcRParams.get(i).getName());
+            else  System.out.print(funcRParams.get(i).getType()+" "+funcRParams.get(i).getName());
         }
         System.out.println(")");
     }

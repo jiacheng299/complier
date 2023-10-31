@@ -1,10 +1,7 @@
 package ir;
 
 import Token.TokenType;
-import ir.Basic.BasicBlock;
-import ir.Basic.Const;
-import ir.Basic.Function;
-import ir.Basic.GlobalVar;
+import ir.Basic.*;
 import ir.Instruction.CallInstruction;
 import ir.Instruction.OpCode;
 import ir.Type.ValueType;
@@ -12,8 +9,10 @@ import node.*;
 import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 public class Generator {
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
@@ -21,6 +20,7 @@ public class Generator {
     private SymbolInfo returnNum=null;
     private HashMap<String,Function> functionList= Function.getFunctions();
     private ValueTable currentValueTable=new ValueTable();
+    private Stack<BasicBlock> loop=new Stack<>();
     private static Integer index=1;
     private StringBuilder irCode=new StringBuilder();
     private Value tmpValue=null;
@@ -162,6 +162,7 @@ public class Generator {
         List<Parameter> parameters=function.getParameters();
         for (int i=0;i<parameters.size();i++) {
             User user=new User(buildFactory.getId(), parameters.get(i).getType());
+            if (parameters.get(i).twoarrayNum!=null) user.setTwoarrayNum(parameters.get(i).twoarrayNum);
             buildFactory.createAllocateInst(currentBasicBlock,user,parameters.get(i));
             buildFactory.createStoreInst(currentBasicBlock,parameters.get(i),user);
             currentValueTable.addValue(funcFParamsNode.getFuncFParamsNodes().get(i).getIdent().getValue(),user);
@@ -180,10 +181,17 @@ public class Generator {
         }
         //一维数组
         else if (funcFParamNode.getLbracks().size() == 1){
-            return null;
+            String name=funcFParamNode.getIdent().getValue();
+            Parameter parameter=new Parameter(buildFactory.getId(),ValueType.i32_);
+            currentValueTable.addValue(name,parameter);
+            return parameter;
         }//二维数组
         else{
-            return null;
+            String name=funcFParamNode.getIdent().getValue();
+            Parameter parameter=new Parameter(buildFactory.getId(),ValueType.i32_);
+            parameter.setTwoarrayNum(((Const)handleConstExp(funcFParamNode.getConstExpNodes().get(0))).getName());
+            currentValueTable.addValue(name,parameter);
+            return parameter;
         }
     }
 
@@ -290,11 +298,54 @@ public class Generator {
         }
         //| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
         else if(stmtnode.getFortk() != null){
+            BasicBlock loopblock=new BasicBlock();
+            BasicBlock outblock=new BasicBlock();
+            BasicBlock ifblock=null;
+            BasicBlock forstmt=new BasicBlock();
+            currentFunction.addBasicBlock(loopblock);
+            if (stmtnode.getForStmt1()!=null){
+                handleForStmt(stmtnode.getForStmt1());
+            }
+            //判断语句单独拿出来作为一个基本块
+            ifblock=new BasicBlock();
+            ifblock.setName(buildFactory.getId());
+            currentFunction.addBasicBlock(ifblock);
+            currentBasicBlock=ifblock;
+            if (stmtnode.getCondNode()!=null)  handleCond(stmtnode.getCondNode(),loopblock,null,outblock);
+            //设置循环基本块
+            loopblock.setName(buildFactory.getId());
+            currentBasicBlock=loopblock;
+            loopblock.setOutBlock(outblock);
+            loop.push(loopblock);
+            if (stmtnode.getForStmt2()!=null) loopblock.setNextBlock(forstmt);
+            else loopblock.setNextBlock(ifblock);
+            handleStmt(stmtnode.getStmtNodes().get(0));
+            loop.pop();
+            //每次执行完循环块后执行一遍forstmt块，如果没有则不执行
+            if (stmtnode.getForStmt2()!=null){
+                currentFunction.addBasicBlock(forstmt);
+                buildFactory.createBranchInst(currentBasicBlock,forstmt);
+                forstmt.setName(buildFactory.getId());
+                currentBasicBlock=forstmt;
+                handleForStmt(stmtnode.getForStmt2());
+                buildFactory.createBranchInst(currentBasicBlock,ifblock);
+            }
+            else{
+                buildFactory.createBranchInst(currentBasicBlock,ifblock);
+            }
+            //buildFactory.createBranchInst(currentBasicBlock,);
 
+
+            outblock.setName(buildFactory.getId());
+            currentBasicBlock=outblock;
+            currentFunction.addBasicBlock(outblock);
         }
         //| 'break' ';' | 'continue' ';'
         else if(stmtnode.getBreaktkOrcontinuetk()!=null){
-
+            if (stmtnode.getBreaktkOrcontinuetk().getType()==TokenType.BREAKTK){
+                buildFactory.createBranchInst(currentBasicBlock,loop.peek().getOutblock());
+            }
+            else buildFactory.createBranchInst(currentBasicBlock,loop.peek().getNextblock());
         }
         //| 'printf''('FormatString{','Exp}')'';'
         else if(stmtnode.getPrintftk()!=null){
@@ -324,6 +375,17 @@ public class Generator {
         else{
             if (stmtnode.getExpNode()!=null){
                 handleExp(stmtnode.getExpNode());
+            }
+        }
+    }
+
+    private void handleForStmt(ForStmtNode forStmt1) {
+        //ForStmt → LVal '=' Exp
+        if (forStmt1.getlValNode()!=null){
+            Value tempValue=handleLVal(forStmt1.getlValNode(),true);
+            if (forStmt1.getExpNode()!=null){
+                Value initValue=handleExp(forStmt1.getExpNode());
+                buildFactory.createStoreInst(currentBasicBlock,initValue,tempValue);
             }
         }
     }
@@ -538,22 +600,96 @@ public class Generator {
 
     private Value handleLVal(LValNode lValNode) {
         //LVal → Ident {'[' Exp ']'}'
+        Value ident=currentValueTable.searchValue(lValNode.getIdent().getValue());
         if (currentBasicBlock == null){
-            return currentValueTable.searchValue(lValNode.getIdent().getValue());
+            return ident;
         }
-        if (lValNode.getExpNodes().size()==0){
-            Value value=currentValueTable.searchValue(lValNode.getIdent().getValue());
-            User user=new User(buildFactory.getId(), value.getType());
-            buildFactory.createLoadInst(currentBasicBlock,user,value);
+        if (ident.getType()==ValueType.i32){
+            User user=new User(buildFactory.getId(), ident.getType());
+            buildFactory.createLoadInst(currentBasicBlock,user,ident);
             return user;
         }
-        else{
+        //一维数组
+        else if (ident.getType()==ValueType.onearray){
+            if (lValNode.getExpNodes().size()==1){
+                Value value1=handleExp(lValNode.getExpNodes().get(0));
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),value1);
+                User tempuser=new User(buildFactory.getId(), ValueType.onearray);
+                user.setType(ValueType.i32);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
+                return tempuser;
+            }
+            //虽然ident是一维数组，但是我取的就是一维数组的数组地址
+            else{
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),new Const("0"));
+                user.setType(ValueType.i32_);
+                User tempuser=new User(buildFactory.getId(), ValueType.onearray);
+                //buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
+                return user;
+            }
+
+        } else if (ident.getType()==ValueType.twoarray) {
+            Value value1=handleExp(lValNode.getExpNodes().get(0));
+            Value value2=handleExp(lValNode.getExpNodes().get(1));
+            Value temp=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
+            Value index=addBinaryInstruction(temp,value2,OpCode.add);
+            Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),index);
+            User tempuser=new User(buildFactory.getId(), ValueType.twoarray);
+            buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
+            return user;
+        }
+        //在函数中可能出现的指针类型
+        else if (ident.getType()==ValueType.i32_) {
+            if (lValNode.getExpNodes().size()==1){
+                User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,ident);
+                Value value1=handleExp(lValNode.getExpNodes().get(0));
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,value1);
+                User user2=new User(buildFactory.getId(),ValueType.i32);
+                buildFactory.createLoadInst(currentBasicBlock,user2,user);
+                return user2;
+            }
+            else {
+                User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,ident);
+                Value value1=handleExp(lValNode.getExpNodes().get(0));
+                Value value2=handleExp(lValNode.getExpNodes().get(1));
+                Const tempconst=new Const(ident.twoarrayNum);
+                Value temp=addBinaryInstruction(value1,tempconst,OpCode.mul);
+                Value index=addBinaryInstruction(temp,value2,OpCode.add);
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,index);
+                User user2=new User(buildFactory.getId(),ValueType.i32);
+                buildFactory.createLoadInst(currentBasicBlock,user2,user);
+                return user2;
+            }
+        } else{
             return null;
         }
     }
     private Value handleLVal(LValNode lvalNode,Boolean left){
         Value value=currentValueTable.searchValue(lvalNode.getIdent().getValue());
-        return value;
+        if (value.getType()==ValueType.i32){
+            return value;
+        }
+        //LVal → Ident {'[' Exp ']'}'
+        else if (value.getType()==ValueType.onearray){
+            Value array=currentValueTable.searchValue(lvalNode.getIdent().getValue());
+            Value value1=handleExp(lvalNode.getExpNodes().get(0));
+            Value user=buildFactory.createGetElementPtr(currentBasicBlock,array,new Const("0"),value1);
+            return user;
+        }
+        else if (value.getType()==ValueType.twoarray){
+            Value array=currentValueTable.searchValue(lvalNode.getIdent().getValue());
+            Value value1=handleExp(lvalNode.getExpNodes().get(0));
+            Value value2=handleExp(lvalNode.getExpNodes().get(1));
+            Value temp=addBinaryInstruction(value1,new Const(array.twoarrayNum),OpCode.mul);
+            Value index=addBinaryInstruction(temp,value2,OpCode.add);
+            Value user=buildFactory.createGetElementPtr(currentBasicBlock,array,new Const("0"),index);
+            return user;
+        }
+        else{
+            return null;
+        }
     }
     private Value handleNumber(NumberNode numberNode) {
         return  buildFactory.createConst(numberNode.getNumber().getValue());
@@ -574,7 +710,6 @@ public class Generator {
 
     private void handleConstDef(ConstDefNode constDefNode,BTypeNode btype){
         //ConstDef → Ident { '[' ConstExp ']' } '=' ConstInitVal
-        //这次先不管数组这玩意
         if (currentValueTable.father==null){
             if (constDefNode.getConstExpNodes().size()==0){
                 GlobalVar globalVar = null;
@@ -583,6 +718,29 @@ public class Generator {
                 }
                 int num = ((Const)handleConstExp(constDefNode.getConstInitValNode().getConstExpNode())).getValue();
                 globalVar.setNum(num);
+                currentValueTable.addValue(constDefNode.getIdent().getValue(),globalVar);
+            }
+            //一维数组
+            else if (constDefNode.getConstExpNodes().size()==1){
+                GlobalVar globalVar = null;
+                if (btype.getInttk()!=null) {
+                    globalVar=buildFactory.createGlobalVar(constDefNode.getIdent().getValue(), ValueType.onearray, true);
+                }
+                globalVar.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                List<String> initValue=handleConstInitVal(constDefNode.getConstInitValNode());
+                globalVar.setArrayNum(initValue);
+                currentValueTable.addValue(constDefNode.getIdent().getValue(),globalVar);
+            }
+            //二维数组
+            else{
+                GlobalVar globalVar=null;
+                if (btype.getInttk()!=null){
+                    globalVar=buildFactory.createGlobalVar(constDefNode.getIdent().getValue(), ValueType.twoarray, true);
+                }
+                globalVar.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                globalVar.setTwoarrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(1))).getName());
+                List<String> initValue=handleConstInitVal(constDefNode.getConstInitValNode());
+                globalVar.setArrayNum(initValue);
                 currentValueTable.addValue(constDefNode.getIdent().getValue(),globalVar);
             }
         }
@@ -595,10 +753,71 @@ public class Generator {
                     param.setType(ValueType.i32);
                 }
                 buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                handleConstInitVal(user,constDefNode.getConstInitValNode());
+                currentValueTable.addValue(constDefNode.getIdent().getValue(),user);
+            }
+            //一维数组
+            else if (constDefNode.getConstExpNodes().size()==1){
+                User user=null;
+                Value param=new Value();
+                if (btype.getInttk()!=null){
+                    user= new User(buildFactory.getId(), ValueType.onearray);
+                    param.setType(ValueType.onearray);
+                    user.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                    param.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                handleConstInitVal(user,constDefNode.getConstInitValNode());
+                currentValueTable.addValue(constDefNode.getIdent().getValue(),user);
+            }
+            //二维数组
+            else {
+                User user=null;
+                Value param=new Value();
+                if (btype.getInttk()!=null){
+                    user= new User(buildFactory.getId(), ValueType.twoarray);
+                    param.setType(ValueType.twoarray);
+                    user.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                    param.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
+                    user.setTwoarrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(1))).getName());
+                    param.setTwoarrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(1))).getName());
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                handleConstInitVal(user,constDefNode.getConstInitValNode());
                 currentValueTable.addValue(constDefNode.getIdent().getValue(),user);
             }
         }
     }
+
+    private void handleConstInitVal(Value user, ConstInitValNode constInitValNode) {
+        //ConstInitVal → ConstExp| '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
+        if (constInitValNode.getConstExpNode()!=null){
+            Value value=handleConstExp(constInitValNode.getConstExpNode());
+            buildFactory.createStoreInst(currentBasicBlock,value,user);
+        }
+        //一维数组
+        else if (user.getType()==ValueType.onearray){
+            for (int i=0;i<constInitValNode.getConstInitValNodes().size();i++){
+                Value tempValue=handleConstExp(constInitValNode.getConstInitValNodes().get(i).getConstExpNode());
+                //先把数组对应的地址取出来
+                Value pointer=buildFactory.createGetElementPtr(currentBasicBlock,user,new Const("0"),new Const(Integer.toString(i)));
+                buildFactory.createStoreInst(currentBasicBlock,tempValue,pointer);
+            }
+        }
+        //二维数组
+        else{
+            for (int i=0;i<constInitValNode.getConstInitValNodes().size();i++){
+                for (int j=0;j<constInitValNode.getConstInitValNodes().get(i).getConstInitValNodes().size();j++){
+                    Value tempValue=handleConstExp(constInitValNode.getConstInitValNodes().get(i).getConstInitValNodes().get(j).getConstExpNode());
+                    //先把数组对应的地址取出来
+                    Integer index=i*Integer.parseInt(user.twoarrayNum)+j;
+                    Value pointer=buildFactory.createGetElementPtr(currentBasicBlock,user,new Const("0"),new Const(Integer.toString(index)));
+                    buildFactory.createStoreInst(currentBasicBlock,tempValue,pointer);
+                }
+            }
+        }
+    }
+
     private void handleVarDecl(VarDeclNode varDeclNode) {
         //VarDecl → BType VarDef { ',' VarDef } ';'
         handleVarDef(varDeclNode.getVarDefNode(),varDeclNode.getbTypeNode());
@@ -624,6 +843,35 @@ public class Generator {
                 globalVar.setNum(num);
                 currentValueTable.addValue(varDefNode.getIdent().getValue(),globalVar);
             }
+            //一维数组
+            else if (varDefNode.getConstExpNodes().size()==1){
+                GlobalVar globalVar = null;
+                if (bTypeNode.getInttk()!=null) {
+                    globalVar=buildFactory.createGlobalVar(varDefNode.getIdent().getValue(), ValueType.onearray, false);
+                }
+                List<String> initValue=null;
+                if (varDefNode.getInitValNode()!=null){
+                    initValue=handleInitial(varDefNode.getInitValNode());
+                }
+                globalVar.setOnearrayNum(((Const)handleConstExp(varDefNode.getConstExpNodes().get(0))).getName());
+                globalVar.setArrayNum(initValue);
+                currentValueTable.addValue(varDefNode.getIdent().getValue(),globalVar);
+            }
+            //二维数组
+            else{
+                GlobalVar globalVar=null;
+                if (bTypeNode.getInttk()!=null){
+                    globalVar=buildFactory.createGlobalVar(varDefNode.getIdent().getValue(), ValueType.twoarray, false);
+                }
+                List<String> initValue=null;
+                if (varDefNode.getInitValNode()!=null){
+                    initValue=handleInitial(varDefNode.getInitValNode());
+                }
+                globalVar.setOnearrayNum(((Const)handleConstExp(varDefNode.getConstExpNodes().get(0))).getName());
+                globalVar.setTwoarrayNum(((Const)handleConstExp(varDefNode.getConstExpNodes().get(1))).getName());
+                globalVar.setArrayNum(initValue);
+                currentValueTable.addValue(varDefNode.getIdent().getValue(),globalVar);
+            }
         }
         else{
             if(varDefNode.getConstExpNodes().size()==0){
@@ -640,20 +888,112 @@ public class Generator {
                 }
                 currentValueTable.addValue(varDefNode.getIdent().getValue(),user);
             }
+            //一维数组
+            //VarDef → Ident { '[' ConstExp ']' } | Ident { '[' ConstExp ']' } '=' InitVal
+            else if (varDefNode.getConstExpNodes().size()==1){
+                User user=null;
+                Value param=new Value();
+                if (bTypeNode.getInttk()!=null){
+                    user= new User(buildFactory.getId(), ValueType.onearray);
+                    param.setType(ValueType.onearray);
+                    Value value=handleConstExp(varDefNode.getConstExpNodes().get(0));
+                    user.setOnearrayNum(((Const)value).getName());
+                    param.setOnearrayNum(((Const)value).getName());
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                if (varDefNode.getInitValNode() != null){
+                    handleInitial(user,varDefNode.getInitValNode());
+                }
+                currentValueTable.addValue(varDefNode.getIdent().getValue(),user);
+            }
+            //二维数组
+            else{
+                User user=null;
+                Value param=new Value();
+                if (bTypeNode.getInttk()!=null){
+                    user= new User(buildFactory.getId(), ValueType.twoarray);
+                    param.setType(ValueType.twoarray);
+                    Value value=handleConstExp(varDefNode.getConstExpNodes().get(0));
+                    user.setOnearrayNum(((Const)value).getName());
+                    param.setOnearrayNum(((Const)value).getName());
+                    Value value1=handleConstExp(varDefNode.getConstExpNodes().get(1));
+                    user.setTwoarrayNum(((Const)value1).getName());
+                    param.setTwoarrayNum(((Const)value1).getName());
+                }
+                buildFactory.createAllocateInst(currentBasicBlock,user,param);
+                if (varDefNode.getInitValNode() != null){
+                    handleInitial(user,varDefNode.getInitValNode());
+                }
+                currentValueTable.addValue(varDefNode.getIdent().getValue(),user);
+            }
+        }
+    }
+    private List<String> handleInitial(InitValNode initValNode) {
+        //InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'
+        if (initValNode.getExpNode()!=null){
+            List<String> list=new ArrayList<>();
+            list.add(((Const)handleExp(initValNode.getExpNode())).getName());
+            return list;
+        }
+        else{
+            List<String> list=new ArrayList<>();
+            for (InitValNode node:initValNode.getInitValNodes()){
+                list.addAll(handleInitial(node));
+            }
+            return list;
+        }
+    }
+    private void handleInitial(Value store,InitValNode initValNode) {
+        //InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'/
+        if (initValNode.getExpNode()!=null){
+            Value initVal= handleExp(initValNode.getExpNode());
+            Value tempValue=store;
+            buildFactory.createStoreInst(currentBasicBlock,initVal,tempValue);
+        }
+        else if (store.getType()==ValueType.onearray){
+            for (int i=0;i<initValNode.getInitValNodes().size();i++){
+                Value tempValue=handleExp(initValNode.getInitValNodes().get(i).getExpNode());
+                //先把数组对应的地址取出来
+                Value pointer=buildFactory.createGetElementPtr(currentBasicBlock,store,new Const("0"),new Const(Integer.toString(i)));
+                buildFactory.createStoreInst(currentBasicBlock,tempValue,pointer);
+            }
+        }
+        //二维数组
+        else{
+            for (int i=0;i<initValNode.getInitValNodes().size();i++){
+                for (int j=0;j<initValNode.getInitValNodes().get(i).getInitValNodes().size();j++){
+                    Value tempValue=handleExp(initValNode.getInitValNodes().get(i).getInitValNodes().get(j).getExpNode());
+                    //先把数组对应的地址取出来
+                    Integer index=i*Integer.parseInt(store.twoarrayNum)+j;
+                    Value pointer=buildFactory.createGetElementPtr(currentBasicBlock,store,new Const("0"),new Const(Integer.toString(index)));
+                    buildFactory.createStoreInst(currentBasicBlock,tempValue,pointer);
+                }
+            }
         }
     }
 
-    private void handleInitial(Value store,InitValNode initValNode) {
-        //InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'/
-        Value initVal= handleExp(initValNode.getExpNode());
-        Value tempValue=store;
-        buildFactory.createStoreInst(currentBasicBlock,initVal,tempValue);
-    }
 
-
-    private void handleConstInitVal(ConstInitValNode constInitValNode) {
+    private List<String> handleConstInitVal(ConstInitValNode constInitValNode) {
     //ConstInitVal → ConstExp| '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
-        handleConstExp(constInitValNode.getConstExpNode());
+        if (constInitValNode.getConstExpNode()==null){
+            //说明接下里的是'{' [ ConstInitVal { ',' ConstInitVal } ] '}'
+            //如果constinitval节点还是没有constexp，说明是二维的
+            if (constInitValNode.getConstInitValNodes().get(0).getConstExpNode()==null){
+                List<String> list=new ArrayList<>();
+                for (ConstInitValNode node:constInitValNode.getConstInitValNodes()){
+                    list.addAll(handleConstInitVal(node));
+                }
+                return list;
+            }
+            else{
+                List<String> list=new ArrayList<>();
+                for (ConstInitValNode node:constInitValNode.getConstInitValNodes()){
+                    list.add(((Const)handleConstExp(node.getConstExpNode())).getName());
+                }
+                return list;
+            }
+        }
+        return null;
     }
 
     private Value handleConstExp(ConstExpNode constExpNode) {
@@ -669,7 +1009,6 @@ public class Generator {
     }
     private Value zext(Value value){
         if (value.getType()!=ValueType.i32){
-            value.setType(ValueType.i32);
             User user=new User(buildFactory.getId(), ValueType.i32);
             buildFactory.createZextInst(currentBasicBlock,user,value,ValueType.i32);
             return user;
