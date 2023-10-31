@@ -1,9 +1,6 @@
 package ir;
 
-import ir.Basic.BasicBlock;
-import ir.Basic.Const;
-import ir.Basic.Function;
-import ir.Basic.GlobalVar;
+import ir.Basic.*;
 import ir.Instruction.*;
 import ir.Type.ValueType;
 
@@ -24,6 +21,7 @@ public class BuildFactory {
     public void createRetInst(BasicBlock block, Value value, ValueType type){
         RetInstruction retInst = new RetInstruction(value,type);
         block.addInstruction(retInst);
+        block.setHasTerminator();
     }
     public Const createConst(String name){
         return new Const(name);
@@ -67,10 +65,12 @@ public class BuildFactory {
     public void resetId1(){this.id=1;}
     public void createBranchInst(BasicBlock basicBlock,Value cond,Value trueblock,Value falseblock){
         BranchInstruction branchInst = new BranchInstruction(cond,trueblock,falseblock);
+        basicBlock.setHasTerminator();
         basicBlock.addInstruction(branchInst);
     }
     public void createBranchInst(BasicBlock basicBlock,Value dest){
         BranchInstruction branchInst = new BranchInstruction(dest);
+        basicBlock.setHasTerminator();
         basicBlock.addInstruction(branchInst);
     }
     public void createIcmpInst(BasicBlock currentBasicBlock, User user, Value value1, Value value2,OpCode opcode    ) {

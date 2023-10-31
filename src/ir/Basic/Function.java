@@ -10,7 +10,7 @@ import java.util.*;
 public class Function extends Value{
     private String name;
     private static HashMap<String,Function> functions = new HashMap<>();
-    private List<Parameter> parameters;//参数列表
+    private List<MyParameter> parameters;//参数列表
     private List<Variable> localVariables;//局部变量列表
     private List<BasicBlock> basicBlocks;//基本块列表
 
@@ -38,7 +38,7 @@ public class Function extends Value{
             }
         });
     }
-    public List<Parameter> getParameters(){
+    public List<MyParameter> getParameters(){
         return parameters;
     }
     public void addFunction(String name,Function function) {Function.functions.put(name,function);}
@@ -55,7 +55,7 @@ public class Function extends Value{
         return basicBlocks;
     }
 
-    public void addParameter(Parameter parameter) {
+    public void addParameter(MyParameter parameter) {
         parameters.add(parameter);
     }
 

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BasicBlock extends Value {
+    private boolean hasTerminator = false;
     private List<BaseInstruction> instructions=new ArrayList<BaseInstruction>();
     private BasicBlock outblock;//后继block
     private BasicBlock nextblock;//前驱block
@@ -43,5 +44,11 @@ public class BasicBlock extends Value {
     }
     public BasicBlock getNextblock(){
         return nextblock;
+    }
+    public boolean hasTerminator() {
+        return hasTerminator;
+    }
+    public void setHasTerminator(){
+        hasTerminator=true;
     }
 }
