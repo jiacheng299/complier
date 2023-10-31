@@ -81,4 +81,17 @@ public class BuildFactory {
         ZextInstruction zextInstruction=new ZextInstruction(result,value,ty);
         currentBasicBlock.addInstruction(zextInstruction);
     }
+
+    public Value createGetElementPtr(BasicBlock currentBasicBlock,Value value1,Value value2,Value value3){
+        User user=new User(buildFactory.getId(),ValueType.i32);
+        GetElementPtr getElementPtrInstruction=new GetElementPtr(user,value1,value2,value3);
+        currentBasicBlock.addInstruction(getElementPtrInstruction);
+        return user;
+    }
+    public Value createGetElementPtr(BasicBlock currentBasicBlock,Value value1,Value value2){
+        User user=new User(buildFactory.getId(),ValueType.i32);
+        GetElementPtr getElementPtrInstruction=new GetElementPtr(user,value1,value2);
+        currentBasicBlock.addInstruction(getElementPtrInstruction);
+        return user;
+    }
 }

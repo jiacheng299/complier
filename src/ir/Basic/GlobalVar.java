@@ -22,8 +22,21 @@ public class GlobalVar extends Value {
     }
     public Integer getNum(){return this.num;}
     public void print(){
-        if (this.isGlobal==true){
-            System.out.println(this.name+" = dso_local global "+this.type+" "+this.num);
+        if (this.type==ValueType.i32) {
+            if (this.isConst)
+                System.out.println(this.name + " = dso_local constant " + this.type + " " + this.num);
+            else
+                System.out.println(this.name + " = dso_local global " + this.type + " " + this.num);
+        }
+        else {
+            if (this.isConst)
+                System.out.print(this.name +" = dso_local constant "+this.printArrayType()+" [");
+            else
+                System.out.print(this.name +" = dso_local global "+this.printArrayType()+" [");
+            for (int i=0;i<this.arrayNum.size();i++){
+                if (i!=this.arrayNum.size()-1) System.out.print("i32 "+this.arrayNum.get(i)+", ");
+                else System.out.println("i32 "+this.arrayNum.get(i)+"]");
+            }
         }
     }
 }

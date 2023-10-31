@@ -9,15 +9,15 @@ import java.util.List;
 
 public class BasicBlock extends Value {
     private List<BaseInstruction> instructions=new ArrayList<BaseInstruction>();
-    private BasicBlock nextBlock;//后继block
-    private BasicBlock jumpBlock;//前驱block
+    private BasicBlock outblock;//后继block
+    private BasicBlock nextblock;//前驱block
     public BasicBlock() {
     }
 
     public BasicBlock(List<BaseInstruction> instructions, BasicBlock nextBlock, BasicBlock jumpBlock) {
         this.instructions = instructions;
-        this.nextBlock = nextBlock;
-        this.jumpBlock = jumpBlock;
+        this.outblock = nextBlock;
+        this.nextblock = jumpBlock;
     }
     public void addInstruction(BaseInstruction instruction) {
         instructions.add(instruction);
@@ -32,11 +32,16 @@ public class BasicBlock extends Value {
     public void setName(String num){
         this.name=num;
     }
-    public void setNextBlock(BasicBlock block) {
-        nextBlock = block;
+    public void setOutBlock(BasicBlock block) {
+        outblock = block;
     }
-
-    public void setJumpBlock(BasicBlock block) {
-        jumpBlock = block;
+    public void setNextBlock(BasicBlock block) {
+        nextblock = block;
+    }
+    public BasicBlock getOutblock(){
+        return outblock;
+    }
+    public BasicBlock getNextblock(){
+        return nextblock;
     }
 }

@@ -1,6 +1,7 @@
-package ir;
+package ir.Basic;
 
 import ir.Type.ValueType;
+import ir.Value;
 
 public class Parameter extends Value {
 
@@ -13,13 +14,19 @@ public class Parameter extends Value {
     }
     public void print() {
         if (this.name != null){
-            System.out.print(type+" "+name);
+            if (type==ValueType.i8_){
+                System.out.print("i8*");
+            } else if (type==ValueType.i32_) {
+                System.out.print("i32*");
+            } else System.out.print(type);
+            System.out.print(" "+name);
         }
         else{
             if (type==ValueType.i8_){
                 System.out.print("i8*");
-            }
-            else System.out.print(type);
+            } else if (type==ValueType.i32_) {
+                System.out.print("i32*");
+            } else System.out.print(type);
         }
 
     }
