@@ -614,7 +614,7 @@ public class Generator {
             if (lValNode.getExpNodes().size()==1){
                 Value value1=handleExp(lValNode.getExpNodes().get(0));
                 Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),value1);
-                User tempuser=new User(buildFactory.getId(), ValueType.onearray);
+                User tempuser=new User(buildFactory.getId(), ValueType.i32);
                 user.setType(ValueType.i32);
                 buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
                 return tempuser;
@@ -629,14 +629,28 @@ public class Generator {
             }
 
         } else if (ident.getType()==ValueType.twoarray) {
-            Value value1=handleExp(lValNode.getExpNodes().get(0));
-            Value value2=handleExp(lValNode.getExpNodes().get(1));
-            Value temp=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
-            Value index=addBinaryInstruction(temp,value2,OpCode.add);
-            Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),index);
-            User tempuser=new User(buildFactory.getId(), ValueType.twoarray);
-            buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
-            return user;
+            if (lValNode.getExpNodes().size()==2){
+                Value value1=handleExp(lValNode.getExpNodes().get(0));
+                Value value2=handleExp(lValNode.getExpNodes().get(1));
+                Value temp=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
+                Value index=addBinaryInstruction(temp,value2,OpCode.add);
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),index);
+                User tempuser=new User(buildFactory.getId(), ValueType.i32);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
+                return tempuser;
+            }//取二维数组的一维地址
+            else if (lValNode.getExpNodes().size()==1){
+                Value value1=handleExp(lValNode.getExpNodes().get(0));
+                Value temp=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),temp);
+                user.setType(ValueType.i32_);
+                return user;
+            }
+            else{
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),new Const("0"));
+                user.setType(ValueType.i32_);
+                return user;
+            }
         }
         //在函数中可能出现的指针类型
         else if (ident.getType()==ValueType.i32_) {

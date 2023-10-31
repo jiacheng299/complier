@@ -56,7 +56,7 @@ public class Compiler {
                 }
             }
         }
-        System.setOut(RedirectSystemOut.ps);
+        System.setOut(RedirectSystemOut.ir);
         if (config.generator){
             Generator generator=new Generator();
             generator.start(parser.getEntrance());
