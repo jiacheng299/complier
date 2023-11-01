@@ -1,7 +1,6 @@
 package ir.Basic;
 
 import ir.Instruction.BaseInstruction;
-import ir.Instruction.Instruction;
 import ir.Value;
 
 import java.util.ArrayList;

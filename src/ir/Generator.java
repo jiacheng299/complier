@@ -32,10 +32,16 @@ public class Generator {
 
     public Value addBinaryInstruction(Value value1, Value value2, OpCode op) {
         if(currentBasicBlock==null){
-            if ((value1 instanceof Const)&& (value2 instanceof Const)){
+            if ((value1 instanceof Const||value1 instanceof GlobalVar)&& (value2 instanceof Const||value2 instanceof GlobalVar)){
                 int temp1,temp2;
-                temp1=Integer.parseInt(value1.getName());
-                temp2=Integer.parseInt(value2.getName());
+                if (value1 instanceof GlobalVar){
+                    temp1=((GlobalVar) value1).getNum();
+                }
+                else temp1=Integer.parseInt(value1.getName());
+                if (value2 instanceof GlobalVar){
+                    temp2=((GlobalVar) value2).getNum();
+                }
+                else temp2=Integer.parseInt(value2.getName());
                 if (op==OpCode.add){
                     return buildFactory.createConst(Integer.toString(temp1+temp2));
                 }
@@ -227,10 +233,10 @@ public class Generator {
         if (stmtnode.getReturntk()!=null) {
             if (stmtnode.getExpNode()!=null) {
                 Value value=handleExp(stmtnode.getExpNode());
-                buildFactory.createRetInst(currentBasicBlock,value,ValueType.i32);
+                if (!currentBasicBlock.hasTerminator())buildFactory.createRetInst(currentBasicBlock,value,ValueType.i32);
             }
             else{
-                buildFactory.createRetInst(currentBasicBlock,new Value(),ValueType.VOID);
+                if (!currentBasicBlock.hasTerminator())buildFactory.createRetInst(currentBasicBlock,new Value(),ValueType.VOID);
             }
         }
         //| Block
@@ -296,12 +302,18 @@ public class Generator {
                 handleForStmt(stmtnode.getForStmt1());
             }
             //判断语句单独拿出来作为一个基本块
-            ifblock=new BasicBlock();
-            ifblock.setName(buildFactory.getId());
-            currentFunction.addBasicBlock(ifblock);
-            buildFactory.createBranchInst(currentBasicBlock,ifblock);
-            currentBasicBlock=ifblock;
-            if (stmtnode.getCondNode()!=null)  handleCond(stmtnode.getCondNode(),loopblock,null,outblock);
+            if (stmtnode.getCondNode()!=null)  {
+                ifblock=new BasicBlock();
+                ifblock.setName(buildFactory.getId());
+                currentFunction.addBasicBlock(ifblock);
+                buildFactory.createBranchInst(currentBasicBlock,ifblock);
+                currentBasicBlock=ifblock;
+                handleCond(stmtnode.getCondNode(),loopblock,null,outblock);
+            }
+            else{
+                ifblock=loopblock;
+                buildFactory.createBranchInst(currentBasicBlock,ifblock);
+            }
             //设置循环基本块
             loopblock.setName(buildFactory.getId());
             currentBasicBlock=loopblock;
@@ -314,7 +326,7 @@ public class Generator {
             //每次执行完循环块后执行一遍forstmt块，如果没有则不执行
             if (stmtnode.getForStmt2()!=null){
                 currentFunction.addBasicBlock(forstmt);
-                buildFactory.createBranchInst(currentBasicBlock,forstmt);
+                if (!currentBasicBlock.hasTerminator())buildFactory.createBranchInst(currentBasicBlock,forstmt);
                 forstmt.setName(buildFactory.getId());
                 currentBasicBlock=forstmt;
                 handleForStmt(stmtnode.getForStmt2());
@@ -333,9 +345,11 @@ public class Generator {
         //| 'break' ';' | 'continue' ';'
         else if(stmtnode.getBreaktkOrcontinuetk()!=null){
             if (stmtnode.getBreaktkOrcontinuetk().getType()==TokenType.BREAKTK){
-                buildFactory.createBranchInst(currentBasicBlock,loop.peek().getOutblock());
+                if (!currentBasicBlock.hasTerminator())buildFactory.createBranchInst(currentBasicBlock,loop.peek().getOutblock());
             }
-            else buildFactory.createBranchInst(currentBasicBlock,loop.peek().getNextblock());
+            else {
+                if (!currentBasicBlock.hasTerminator())buildFactory.createBranchInst(currentBasicBlock,loop.peek().getNextblock());
+            }
         }
         //| 'printf''('FormatString{','Exp}')'';'
         else if(stmtnode.getPrintftk()!=null){
@@ -464,8 +478,8 @@ public class Generator {
         //EqExp → RelExp {('==' | '!=') RelExp}
         if (eqExpNode.getRelExpNodes().size()==1) return handleRelExp(eqExpNode.getRelExpNodes().get(0));
         else{
-            Value value1=handleRelExp(eqExpNode.getRelExpNodes().get(0));
-            Value value2=handleRelExp(eqExpNode.getRelExpNodes().get(1));
+            Value value1=zext(handleRelExp(eqExpNode.getRelExpNodes().get(0)));
+            Value value2=zext(handleRelExp(eqExpNode.getRelExpNodes().get(1)));
             OpCode opcode=OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(0).getType());
             User user=new User(buildFactory.getId(), ValueType.i1);
             buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
@@ -484,8 +498,8 @@ public class Generator {
         //RelExp → AddExp { ('<' | '>' | '<=' | '>=') AddExp}
         if (relExpNode.getAddExpNodes().size()==1) return handleAddExp(relExpNode.getAddExpNodes().get(0));
         else{
-            Value value1=handleAddExp(relExpNode.getAddExpNodes().get(0));
-            Value value2=handleAddExp(relExpNode.getAddExpNodes().get(1));
+            Value value1=zext(handleAddExp(relExpNode.getAddExpNodes().get(0)));
+            Value value2=zext(handleAddExp(relExpNode.getAddExpNodes().get(1)));
             OpCode opcode=OpCode.Token2Op(relExpNode.getOps().get(0).getType());
             User user=new User(buildFactory.getId(), ValueType.i1);
             buildFactory.createIcmpInst(currentBasicBlock,user,value1,value2,opcode);
@@ -603,7 +617,16 @@ public class Generator {
         //LVal → Ident {'[' Exp ']'}'
         Value ident=currentValueTable.searchValue(lValNode.getIdent().getValue());
         if (currentBasicBlock == null){
-            return ident;
+            if (ident.getType()==ValueType.i32) return ident;
+            else if (ident.getType()==ValueType.onearray){
+                Value index1=handleExp(lValNode.getExpNodes().get(0));
+                return new Const(ident.arrayNum.get(Integer.parseInt(index1.getName())));
+            }
+            else if(ident.getType()==ValueType.twoarray){
+                Value index1=handleExp(lValNode.getExpNodes().get(0));
+                Value index2=handleExp(lValNode.getExpNodes().get(1));
+                return new Const(ident.arrayNum.get(Integer.parseInt(ident.twoarrayNum)*Integer.parseInt(index1.getName())+Integer.parseInt(index2.getName())));
+            }
         }
         if (ident.getType()==ValueType.i32){
             User user=new User(buildFactory.getId(), ident.getType());
@@ -624,7 +647,7 @@ public class Generator {
             else{
                 Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),new Const("0"));
                 user.setType(ValueType.i32_);
-                User tempuser=new User(buildFactory.getId(), ValueType.onearray);
+
                 //buildFactory.createLoadInst(currentBasicBlock,tempuser,user);
                 return user;
             }
@@ -655,14 +678,32 @@ public class Generator {
         }
         //在函数中可能出现的指针类型
         else if (ident.getType()==ValueType.i32_) {
-            if (lValNode.getExpNodes().size()==1){
-                User tempuser=new User(buildFactory.getId(), ValueType.i32_);
-                buildFactory.createLoadInst(currentBasicBlock,tempuser,ident);
-                Value value1=handleExp(lValNode.getExpNodes().get(0));
-                Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,value1);
-                User user2=new User(buildFactory.getId(),ValueType.i32);
-                buildFactory.createLoadInst(currentBasicBlock,user2,user);
-                return user2;
+            if (lValNode.getExpNodes().size()==0){
+                User user=new User(buildFactory.getId(), ValueType.i32_);
+                buildFactory.createLoadInst(currentBasicBlock,user,ident);
+                return user;
+            }
+            else if (lValNode.getExpNodes().size()==1){
+                //如果ident是二维，exp只有一个，说明传入的是一维
+                if (ident.twoarrayNum!=null){
+                    User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                    buildFactory.createLoadInst(currentBasicBlock,tempuser,ident);
+                    Value value1=handleExp(lValNode.getExpNodes().get(0));
+                    Value index=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
+                    Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,index);
+                    user.setType(ValueType.i32_);
+                    return user;
+                }
+                else{
+                    User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                    buildFactory.createLoadInst(currentBasicBlock,tempuser,ident);
+                    Value value1=handleExp(lValNode.getExpNodes().get(0));
+                    Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,value1);
+                    User user2=new User(buildFactory.getId(),ValueType.i32);
+                    buildFactory.createLoadInst(currentBasicBlock,user2,user);
+                    return user2;
+                }
+
             }
             else {
                 User tempuser=new User(buildFactory.getId(), ValueType.i32_);
@@ -688,19 +729,37 @@ public class Generator {
         }
         //LVal → Ident {'[' Exp ']'}'
         else if (value.getType()==ValueType.onearray){
-            Value array=currentValueTable.searchValue(lvalNode.getIdent().getValue());
             Value value1=handleExp(lvalNode.getExpNodes().get(0));
-            Value user=buildFactory.createGetElementPtr(currentBasicBlock,array,new Const("0"),value1);
+            Value user=buildFactory.createGetElementPtr(currentBasicBlock,value,new Const("0"),value1);
             return user;
         }
         else if (value.getType()==ValueType.twoarray){
-            Value array=currentValueTable.searchValue(lvalNode.getIdent().getValue());
             Value value1=handleExp(lvalNode.getExpNodes().get(0));
             Value value2=handleExp(lvalNode.getExpNodes().get(1));
-            Value temp=addBinaryInstruction(value1,new Const(array.twoarrayNum),OpCode.mul);
+            Value temp=addBinaryInstruction(value1,new Const(value.twoarrayNum),OpCode.mul);
             Value index=addBinaryInstruction(temp,value2,OpCode.add);
-            Value user=buildFactory.createGetElementPtr(currentBasicBlock,array,new Const("0"),index);
+            Value user=buildFactory.createGetElementPtr(currentBasicBlock,value,new Const("0"),index);
             return user;
+        }
+
+        else if (value.getType()==ValueType.i32_){
+            if (lvalNode.getExpNodes().size()==1){
+                Value value1=handleExp(lvalNode.getExpNodes().get(0));
+                User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,value);
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,value1);
+                return user;
+            }
+            else{
+                Value value1=handleExp(lvalNode.getExpNodes().get(0));
+                Value value2=handleExp(lvalNode.getExpNodes().get(1));
+                Value temp=addBinaryInstruction(value1,new Const(value.twoarrayNum),OpCode.mul);
+                Value index=addBinaryInstruction(temp,value2,OpCode.add);
+                User tempuser=new User(buildFactory.getId(), ValueType.i32_);
+                buildFactory.createLoadInst(currentBasicBlock,tempuser,value);
+                Value user=buildFactory.createGetElementPtr(currentBasicBlock,tempuser,index);
+                return user;
+            }
         }
         else{
             return null;
@@ -1001,7 +1060,11 @@ public class Generator {
             else{
                 List<String> list=new ArrayList<>();
                 for (ConstInitValNode node:constInitValNode.getConstInitValNodes()){
-                    list.add(((Const)handleConstExp(node.getConstExpNode())).getName());
+                    Value value=handleConstExp(node.getConstExpNode());
+                    if (value instanceof GlobalVar){
+                        list.add(Integer.toString(((GlobalVar)value).getNum()));
+                    }
+                    else list.add(((Const)handleConstExp(node.getConstExpNode())).getName());
                 }
                 return list;
             }
@@ -1024,7 +1087,6 @@ public class Generator {
         if (value.getType()!=ValueType.i32){
             User user=new User(buildFactory.getId(), ValueType.i32);
             buildFactory.createZextInst(currentBasicBlock,user,value,ValueType.i32);
-            value.setType(ValueType.i32);
             return user;
         }
         return value;

@@ -3,7 +3,6 @@ package ir.Basic;
 
 import ir.Type.ValueType;
 import ir.Value;
-import ir.Variable;
 
 import java.util.*;
 
@@ -11,7 +10,7 @@ public class Function extends Value{
     private String name;
     private static HashMap<String,Function> functions = new HashMap<>();
     private List<MyParameter> parameters;//参数列表
-    private List<Variable> localVariables;//局部变量列表
+
     private List<BasicBlock> basicBlocks;//基本块列表
 
     private BasicBlock entryBlock;//入口block
@@ -22,7 +21,6 @@ public class Function extends Value{
         this.name = name;
         this.returnType =returnType;
         this.parameters = new ArrayList<>();
-        this.localVariables = new ArrayList<>();
         this.basicBlocks = new ArrayList<>();
         this.entryBlock = null;
         this.exitBlock = null;
@@ -59,9 +57,6 @@ public class Function extends Value{
         parameters.add(parameter);
     }
 
-    public void addLocalVariable(Variable variable) {
-        localVariables.add(variable);
-    }
 
     public void addBasicBlock(BasicBlock basicBlock) {
         basicBlocks.add(basicBlock);
