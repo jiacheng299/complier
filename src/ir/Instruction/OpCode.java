@@ -3,7 +3,7 @@ package ir.Instruction;
 import Token.TokenType;
 
 public enum OpCode {
-    add, sub, mul, sdiv, mod,ne,eq,sgt,sge,slt,sle;
+    add, sub, mul, sdiv, srem,ne,eq,sgt,sge,slt,sle;
     public static OpCode Token2Op(TokenType tokenType) {
         switch (tokenType) {
             case PLUS:
@@ -13,7 +13,7 @@ public enum OpCode {
             case MULT:
                 return OpCode.mul;
             case MOD:
-                return OpCode.mod;
+                return OpCode.srem;
             case DIV:
                 return OpCode.sdiv;
             case EQL:

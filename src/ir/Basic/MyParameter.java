@@ -3,12 +3,12 @@ package ir.Basic;
 import ir.Type.ValueType;
 import ir.Value;
 
-public class Parameter extends Value {
+public class MyParameter extends Value {
 
-    public Parameter(ValueType dataType) {
+    public MyParameter(ValueType dataType) {
         this.type = dataType;
     }
-    public Parameter(String name,ValueType dataType){
+    public MyParameter(String name, ValueType dataType){
         this.name = name;
         this.type = dataType;
     }

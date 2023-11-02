@@ -28,7 +28,7 @@ public class GlobalVar extends Value {
             else
                 System.out.println(this.name + " = dso_local global " + this.type + " " + this.num);
         }
-        else {
+        else if (this.arrayNum!=null){
             if (this.isConst)
                 System.out.print(this.name +" = dso_local constant "+this.printArrayType()+" [");
             else
@@ -37,6 +37,12 @@ public class GlobalVar extends Value {
                 if (i!=this.arrayNum.size()-1) System.out.print("i32 "+this.arrayNum.get(i)+", ");
                 else System.out.println("i32 "+this.arrayNum.get(i)+"]");
             }
+        }
+        else{
+            if (this.isConst)
+                System.out.println(this.name +" = dso_local constant "+this.printArrayType()+" zeroinitializer");
+            else
+                System.out.println(this.name +" = dso_local global "+this.printArrayType()+" zeroinitializer");
         }
     }
 }
