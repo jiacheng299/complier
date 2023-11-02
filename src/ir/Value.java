@@ -9,11 +9,11 @@ public class Value {
     protected String name=null;
     protected Integer num;
     protected ValueType type;
-    protected String onearrayNum=null;
-    protected String twoarrayNum=null;
+    public String onearrayNum=null;
+    public String twoarrayNum=null;
     protected boolean isConst=false;
     protected boolean isGlobal=false;
-    protected List<String> arrayNum=new ArrayList<>();
+    public List<String> arrayNum=new ArrayList<>();
     private List<Use> uses;
     public Value(){}
     public Value(String name, ValueType type) {

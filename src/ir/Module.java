@@ -28,6 +28,9 @@ public class Module {
 
         }
     }
+    public List<GlobalVar> getGlobalVars(){
+        return globalVars;
+    }
     public void addFunction(Function function) {
         module.functions.add(function);
     }
