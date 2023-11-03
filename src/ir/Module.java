@@ -31,6 +31,9 @@ public class Module {
     public List<GlobalVar> getGlobalVars(){
         return globalVars;
     }
+    public List<Function> getFunctions(){
+        return functions;
+    }
     public void addFunction(Function function) {
         module.functions.add(function);
     }

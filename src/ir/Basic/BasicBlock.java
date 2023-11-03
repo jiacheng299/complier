@@ -50,4 +50,5 @@ public class BasicBlock extends Value {
     public void setHasTerminator(){
         hasTerminator=true;
     }
+    public List<BaseInstruction> getInstructions() {return instructions;}
 }
