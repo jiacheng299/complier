@@ -93,7 +93,37 @@ public class codeToMips {
         else if (instruction instanceof ZextInstruction) handleZextInstruction(instruction);
     }
 
+    private void handleBinaryInstruction(BaseInstruction instruction) {
+        if (((BinaryInstruction) instruction).opCode==OpCode.add){
+
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.sub){
+
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.mul){
+
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.sdiv){
+
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.srem){
+
+        }
+    }
+
     private void handleAllocateInstruction(BaseInstruction instruction) {
+        //如果是申请内存的话，我把它放到栈里
+        String virtualName=instruction.result.getName();
+        ValueType valueType=instruction.value1.getType();
+        if (valueType==ValueType.onearray){
+            myMemManage.getStackReg(virtualName,Integer.parseInt(instruction.value1.onearrayNum));
+        }
+        else if (valueType==ValueType.twoarray){
+            myMemManage.getStackReg(virtualName,Integer.parseInt(instruction.value1.onearrayNum)*Integer.parseInt(instruction.value1.twoarrayNum));
+        }
+        else{
+            myMemManage.getStackReg(virtualName);
+        }
     }
 
 

@@ -4,7 +4,7 @@ import ir.User;
 import ir.Value;
 
 public class BinaryInstruction extends BaseInstruction{
-        private OpCode opCode;
+        public OpCode opCode;
         public BinaryInstruction(Value value1, Value value2, User result,OpCode opCode) {
             this.value1 = value1;
             this.value2 = value2;

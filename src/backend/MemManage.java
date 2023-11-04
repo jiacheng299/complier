@@ -17,4 +17,10 @@ public class MemManage {
         virtual2Stack.put(new VirtualRegister(virtualNum), res);
         return res;
     }
+    public MyStack getStackReg(String virtualNum,Integer num) {
+        MyStack res = new MyStack(stackPointer);
+        virtual2Stack.put(new VirtualRegister(virtualNum), res);
+        stackPointer+=num;
+        return res;
+    }
 }
