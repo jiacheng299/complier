@@ -60,7 +60,7 @@ public class MipsInstruction {
             else System.out.println(name+": .word "+num);
         }
         else if (mipsType==MipsType.space){
-            System.out.println(name+": .word"+memsize);
+            System.out.println(name+": .space"+memsize);
         }
         else if (mipsType==MipsType.func){
             System.out.println(name+":");

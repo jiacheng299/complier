@@ -9,11 +9,16 @@ import ir.Value;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 public class codeToMips {
     protected Module myModule;
+    public Integer maxParamSize;
     protected MemManage myMemManage=new MemManage();
-
+    public codeToMips(Module myModule){
+        this.myModule=myModule;
+        maxParamSize=findMaxParamSize();
+    }
     private Integer findMaxParamSize() {
         int maxSize=0;
         for (Function function:myModule.getFunctions()){
@@ -49,13 +54,22 @@ public class codeToMips {
         mipsInstructions.add(new MipsInstruction(MipsType.func, function.getName()));
         //先计算函数所需内存
         int memsize=calculateMemorySize(function);
+        //把函数参数所需要的栈建立起来
+        for (int i=0;i<maxParamSize;i++){
+            Integer temp=i+4;
+            myMemManage.getStackReg("param"+temp);
+        }
+        //寄存器保存现场需要8个栈
+        for(int i=8;i<17;i++){
+
+        }
     }
 
     private int calculateMemorySize(Function function) {
         //先存储ra，sp和s0-s7 10个寄存器
         int memsize=4*10;
         //函数调用参数可能还要加
-        memsize+=findMaxParamSize()*4;
+        memsize+=maxParamSize*4;
         for (BasicBlock block : function.getBasicBlocks()){
             for (BaseInstruction instruction:block.getInstructions()){
                 if (instruction instanceof AllocateInstruction){

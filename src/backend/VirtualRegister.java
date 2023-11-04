@@ -1,5 +1,8 @@
 package backend;
 
-public enum VirtualRegister {
-    $v0,$v1,$v2;
+public class VirtualRegister {
+    public String name;
+    public VirtualRegister(String name){
+        this.name=name;
+    }
 }
