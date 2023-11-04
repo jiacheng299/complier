@@ -5,4 +5,8 @@ public class MyStack {
     public MyStack(Integer index){
         this.index=index;
     }
+
+    public String getIndex() {
+        return Integer.toString(index*4);
+    }
 }

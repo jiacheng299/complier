@@ -1,5 +1,7 @@
 package backend;
 
+import ir.Instruction.BaseInstruction;
+
 import java.util.List;
 
 //此类用来定义mips的指令
@@ -11,6 +13,7 @@ public class MipsInstruction {
     protected String name=null;
     protected Integer num=null;
     protected Integer memsize=null;
+    protected BaseInstruction instruction;
     protected List<String> initParams=null;
     public MipsInstruction(MipsType type){
         this.mipsType=type;
@@ -18,6 +21,10 @@ public class MipsInstruction {
     public MipsInstruction(MipsType type,String name){
         this.mipsType=type;
         this.name=name;
+    }
+    public MipsInstruction(MipsType type,BaseInstruction baseInstruction){
+        this.mipsType=type;
+        this.instruction=baseInstruction;
     }
     public MipsInstruction(MipsType type,String reg1,String reg2,String reg3){
         this.mipsType=type;

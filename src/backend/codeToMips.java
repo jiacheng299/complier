@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.locks.ReadWriteLock;
 
 public class codeToMips {
     protected Module myModule;
@@ -61,8 +62,48 @@ public class codeToMips {
         }
         //寄存器保存现场需要8个栈
         for(int i=8;i<17;i++){
-
+            myMemManage.getStackReg(RealRegister.RegName[i]);
         }
+        //保存栈顶和$ra
+        saveStackTop(memsize);
+        //处理函数参数
+        //处理函数中的语句块
+        for (BasicBlock block:function.getBasicBlocks()){
+            handleBlock(block);
+        }
+    }
+
+    private void handleBlock(BasicBlock block) {
+        for (BaseInstruction instruction:block.getInstructions()){
+            handleInstruction(instruction);
+        }
+    }
+
+    private void handleInstruction(BaseInstruction instruction) {
+        mipsInstructions.add(new MipsInstruction(MipsType.debug,instruction));
+        if (instruction instanceof AllocateInstruction) handleAllocateInstruction(instruction);
+        else if (instruction instanceof BinaryInstruction) handleBinaryInstruction(instruction);
+        else if (instruction instanceof BranchInstruction) handleBranchInstruction(instruction);
+        else if (instruction instanceof CallInstruction) handleCallInstruction(instruction);
+        else if (instruction instanceof GetElementPtr) handleGetElementPtr(instruction);
+        else if (instruction instanceof IcmpInstruction) handleIcmpInstruction(instruction);
+        else if (instruction instanceof LoadInstruction) handleLoadInstruction(instruction);
+        else if (instruction instanceof RetInstruction) handleRetInstruction(instruction);
+        else if (instruction instanceof StoreInstruction) handleStoreInstruction(instruction);
+        else if (instruction instanceof ZextInstruction) handleZextInstruction(instruction);
+    }
+
+    private void handleAllocateInstruction(BaseInstruction instruction) {
+    }
+
+
+    private void saveStackTop(int memsize) {
+        mipsInstructions.add(new MipsInstruction(MipsType.addu,"$t0","$sp","$zero"));
+        MyStack stack=myMemManage.getStackReg("$sp");
+        mipsInstructions.add(new MipsInstruction(MipsType.addiu,"$sp","$sp","-"+memsize));
+        mipsInstructions.add(new MipsInstruction(MipsType.sw,"$t0","$sp",stack.getIndex()));
+        stack = myMemManage.getStackReg("$ra");
+        mipsInstructions.add(new MipsInstruction( MipsType.sw, "$ra", "$sp", stack.getIndex()));
     }
 
     private int calculateMemorySize(Function function) {
