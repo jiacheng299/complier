@@ -72,16 +72,26 @@ public class MipsInstruction {
         else if (mipsType==MipsType.func){
             System.out.println(name+":");
         }
+        else if (mipsType==MipsType.syscall){
+            System.out.println("    syscall");
+        }
+        else if (mipsType==MipsType.sw||mipsType==MipsType.lw){
+            System.out.println("    "+mipsType + " "+reg1 + " "+reg3+"("+reg2+")");
+        }
+        else if (mipsType==MipsType.debug){
+            System.out.print("  #");
+            instruction.print();
+        }
         else{
             //如果是一个操作数
             if (reg2 == null){
-                System.out.println(mipsType+" "+reg1);
+                System.out.println("    "+mipsType+" "+reg1);
             }//如果是两个操作数
             else if (reg3==null){
-                System.out.println(mipsType+" "+reg1+" "+reg2);
+                System.out.println("    "+mipsType+" "+reg1+" "+reg2);
             }//如果是三个操作数
             else{
-                System.out.println(mipsType+" "+reg1+" "+reg2+" "+reg3);
+                System.out.println("    "+mipsType+" "+reg1+" "+reg2+" "+reg3);
             }
         }
     }

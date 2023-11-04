@@ -16,7 +16,7 @@ public class Function extends Value{
     private BasicBlock entryBlock;//入口block
     private BasicBlock exitBlock;//出口block
     private ValueType returnType;
-    private Boolean isDefined=false;
+    public Boolean isDefined=false;
     public Function(String name,ValueType returnType) {
         this.name = name;
         this.returnType =returnType;

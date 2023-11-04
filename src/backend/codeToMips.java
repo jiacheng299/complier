@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 public class codeToMips {
     protected Module myModule;
     public Integer maxParamSize;
+    public Integer tempRegisterIndex=1;
     protected MemManage myMemManage=new MemManage();
     public codeToMips(Module myModule){
         this.myModule=myModule;
@@ -29,7 +30,7 @@ public class codeToMips {
         else return 0;
     }
 
-    protected List<MipsInstruction> mipsInstructions=new ArrayList<MipsInstruction>();
+    public List<MipsInstruction> mipsInstructions=new ArrayList<MipsInstruction>();
     public void start(){
         //首先处理data段
         handleData();
@@ -47,7 +48,8 @@ public class codeToMips {
         Collections.reverse(myModule.getFunctions());
         List<Function> functions=myModule.getFunctions();
         for (Function function:functions){
-
+            if (function.isDefined) handleFunc1(function);
+            else handleFunc2(function);
         }
     }
     //处理declare函数
@@ -83,19 +85,58 @@ public class codeToMips {
         mipsInstructions.add(new MipsInstruction(MipsType.debug,instruction));
         if (instruction instanceof AllocateInstruction) handleAllocateInstruction(instruction);
         else if (instruction instanceof BinaryInstruction) handleBinaryInstruction(instruction);
-        else if (instruction instanceof BranchInstruction) handleBranchInstruction(instruction);
-        else if (instruction instanceof CallInstruction) handleCallInstruction(instruction);
-        else if (instruction instanceof GetElementPtr) handleGetElementPtr(instruction);
-        else if (instruction instanceof IcmpInstruction) handleIcmpInstruction(instruction);
+//        else if (instruction instanceof BranchInstruction) handleBranchInstruction(instruction);
+//        else if (instruction instanceof CallInstruction) handleCallInstruction(instruction);
+//        else if (instruction instanceof GetElementPtr) handleGetElementPtr(instruction);
+//        else if (instruction instanceof IcmpInstruction) handleIcmpInstruction(instruction);
         else if (instruction instanceof LoadInstruction) handleLoadInstruction(instruction);
         else if (instruction instanceof RetInstruction) handleRetInstruction(instruction);
         else if (instruction instanceof StoreInstruction) handleStoreInstruction(instruction);
-        else if (instruction instanceof ZextInstruction) handleZextInstruction(instruction);
+//        else if (instruction instanceof ZextInstruction) handleZextInstruction(instruction);
+    }
+
+    private void handleLoadInstruction(BaseInstruction instruction) {
+        //如果要加载的参数是函数参数
+        if (myMemManage.isParameter(instruction.result.getName())){
+            MyStack stack = myMemManage.lookupStack(instruction.result.getName());
+        }
+        else{
+            RealRegister resultReg = myMemManage.getTempReg(instruction.result.getName());
+            MyStack stackReg = myMemManage.lookupStack(instruction.value1.getName());
+            if (stackReg != null){
+                mipsInstructions.add(new MipsInstruction(MipsType.lw,resultReg.name,"$sp", stackReg.getIndex()));
+            }
+            //找不到就去全局变量找
+            else{
+                mipsInstructions.add(new MipsInstruction(MipsType.lw, resultReg.name,instruction.value1.getName()));
+            }
+        }
+    }
+
+    private void handleStoreInstruction(BaseInstruction instruction) {
+        RealRegister tempReg=lookup(instruction.value1);
+        MyStack stack=myMemManage.lookupStack(instruction.value2.getName());
+        if (stack!=null){
+            mipsInstructions.add(new MipsInstruction(MipsType.sw,tempReg.name,"$sp",stack.getIndex()));
+        }
+        //可能value2是全局变量
+        else{
+            //mipsInstructions.add(new MipsInstruction())
+        }
+        myMemManage.freeTempReg(tempReg);
+    }
+
+    private void handleRetInstruction(BaseInstruction instruction) {
+        mipsInstructions.add(new MipsInstruction(MipsType.addiu, "$v0", "$zero", "10"));
+        mipsInstructions.add(new MipsInstruction(MipsType.syscall, ""));
     }
 
     private void handleBinaryInstruction(BaseInstruction instruction) {
         if (((BinaryInstruction) instruction).opCode==OpCode.add){
-
+            RealRegister reg1=lookup(instruction.value1);
+            RealRegister reg2=lookup(instruction.value2);
+            RealRegister reg0=myMemManage.getTempReg(instruction.result.getName());
+            mipsInstructions.add(new MipsInstruction(MipsType.addu,reg0.name,reg1.name,reg2.name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.sub){
 
@@ -203,5 +244,26 @@ public class codeToMips {
         mipsInstructions.add(instruction);
         myMemManage.globalSet.add(global.getName().replace("@",""));
     }
+    private RealRegister lookup(Value value){
+        RealRegister temp;
+        if(value instanceof Const){
+            //拿到t0-t7中的一个空闲寄存器
+            temp=myMemManage.getTempReg("tempReg"+tempRegisterIndex++);
+            //把这个const的值存到对应的寄存器中
+            mipsInstructions.add(new MipsInstruction(MipsType.addiu,temp.name,"$zero",value.getName()));
+        }
+        else{
+            //看看value是否已经存到某个寄存器中了
+            temp=myMemManage.lookupTemp(value.getName());
+            if(temp==null){
+                //看看栈中有没有这个value
+                MyStack stack=myMemManage.lookupStack(value.getName());
+                //拿到t0-t7中的一个空闲寄存器
+                temp =myMemManage.getTempReg(value.getName());
+                mipsInstructions.add(new MipsInstruction(MipsType.lw, temp.name,"$sp",stack.getIndex()));
+            }
 
+        }
+        return temp;
+    }
 }
