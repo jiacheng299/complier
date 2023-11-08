@@ -4,7 +4,7 @@ import ir.Type.ValueType;
 import ir.Value;
 
 public class RetInstruction extends BaseInstruction {
-    private ValueType type;
+    public ValueType type;
     public RetInstruction(Value value,ValueType type){
         this.result=value;
         this.type=type;

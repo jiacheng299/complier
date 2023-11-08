@@ -3,7 +3,7 @@ package ir.Instruction;
 import ir.Value;
 
 public class BranchInstruction extends BaseInstruction{
-    protected Value cond;
+    public Value cond;
 
 
     public  BranchInstruction(Value cond,Value labelTrue,Value labelFalse){

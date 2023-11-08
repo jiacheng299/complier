@@ -7,7 +7,7 @@ import ir.Value;
 import java.util.ArrayList;
 
 public class CallInstruction extends BaseInstruction{
-    protected Function function;
+    public Function function;
     public ArrayList<Value> funcRParams;
     public CallInstruction(Function function, Value res) {
         this.result = res;

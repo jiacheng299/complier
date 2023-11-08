@@ -4,7 +4,7 @@ import ir.User;
 import ir.Value;
 
 public class IcmpInstruction extends BaseInstruction{
-    protected OpCode op;
+    public OpCode op;
     public IcmpInstruction(User result, Value value1, Value value2, OpCode op) {
         this.result = result;
         this.value1 = value1;

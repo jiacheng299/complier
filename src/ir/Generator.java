@@ -316,6 +316,7 @@ public class Generator {
             }
             //设置循环基本块
             loopblock.setName(buildFactory.getId());
+            loopblock.enterLoop=true;
             currentBasicBlock=loopblock;
             loopblock.setOutBlock(outblock);
             loop.push(loopblock);
@@ -339,6 +340,7 @@ public class Generator {
 
 
             outblock.setName(buildFactory.getId());
+            outblock.exitLoop=true;
             currentBasicBlock=outblock;
             currentFunction.addBasicBlock(outblock);
         }
@@ -767,7 +769,6 @@ public class Generator {
     }
     private Value handleNumber(NumberNode numberNode) {
         return  buildFactory.createConst(numberNode.getNumber().getValue());
-
     }
 
     private void handleDecl(DeclNode declnode) {

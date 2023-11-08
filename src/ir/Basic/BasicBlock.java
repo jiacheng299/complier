@@ -11,6 +11,8 @@ public class BasicBlock extends Value {
     private List<BaseInstruction> instructions=new ArrayList<BaseInstruction>();
     private BasicBlock outblock;//后继block
     private BasicBlock nextblock;//前驱block
+    public boolean enterLoop;
+    public boolean exitLoop;
     public BasicBlock() {
     }
 

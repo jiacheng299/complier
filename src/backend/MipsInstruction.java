@@ -56,7 +56,7 @@ public class MipsInstruction {
             System.out.println(".text");
         }
         else if (mipsType==MipsType.word){
-            if(this.memsize!=null){
+            if(this.initParams!=null){
                 System.out.print(name+": .word ");
                 Integer size= initParams.size();
                 for (int i=0;i<size-1;i++){
@@ -67,7 +67,7 @@ public class MipsInstruction {
             else System.out.println(name+": .word "+num);
         }
         else if (mipsType==MipsType.space){
-            System.out.println(name+": .space"+memsize);
+            System.out.println(name+": .space "+memsize);
         }
         else if (mipsType==MipsType.func){
             System.out.println(name+":");
@@ -76,11 +76,15 @@ public class MipsInstruction {
             System.out.println("    syscall");
         }
         else if (mipsType==MipsType.sw||mipsType==MipsType.lw){
-            System.out.println("    "+mipsType + " "+reg1 + " "+reg3+"("+reg2+")");
+            if (reg3!=null) System.out.println("    "+mipsType + " "+reg1 + ", "+reg3+"("+reg2+")");
+            else System.out.println("    "+mipsType + " "+reg1 + ", "+reg2);
         }
         else if (mipsType==MipsType.debug){
             System.out.print("  #");
             instruction.print();
+        }
+        else if(mipsType==MipsType.jal||mipsType==MipsType.jr||mipsType==MipsType.j||mipsType==MipsType.mfhi||mipsType==MipsType.mflo){
+            System.out.println("    "+mipsType+" "+name);
         }
         else{
             //如果是一个操作数
@@ -88,10 +92,10 @@ public class MipsInstruction {
                 System.out.println("    "+mipsType+" "+reg1);
             }//如果是两个操作数
             else if (reg3==null){
-                System.out.println("    "+mipsType+" "+reg1+" "+reg2);
+                System.out.println("    "+mipsType+" "+reg1+", "+reg2);
             }//如果是三个操作数
             else{
-                System.out.println("    "+mipsType+" "+reg1+" "+reg2+" "+reg3);
+                System.out.println("    "+mipsType+" "+reg1+", "+reg2+", "+reg3);
             }
         }
     }

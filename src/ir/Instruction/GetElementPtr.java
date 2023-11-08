@@ -3,8 +3,8 @@ package ir.Instruction;
 import ir.Value;
 
 public class GetElementPtr extends BaseInstruction{
-    private Value bound1;
-    private Value bound2=null;
+    public Value bound1;
+    public Value bound2=null;
     public GetElementPtr(Value result, Value value1, Value bound1, Value bound2) {
         this.result = result;
         this.value1 = value1;
