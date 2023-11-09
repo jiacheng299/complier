@@ -2,7 +2,7 @@
 // 然后按 Enter 键。现在，您可以在代码中看到空格字符。
 
 import backend.MipsInstruction;
-import backend.primitive.codeToMips;
+import backend.codeToMips;
 import config.config;
 import error.*;
 import front.ErrorHandle;

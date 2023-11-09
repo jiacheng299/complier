@@ -1,4 +1,4 @@
-package backend.optimization;
+package backend;
 
 import ir.Basic.BasicBlock;
 import ir.Basic.Function;

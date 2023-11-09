@@ -1,21 +1,7 @@
-int oneDimensionalArray[5], twoDimensionalArray[5][5];
-
-int copyArray1D(int source[])
-{
-    printf("%d\n",source[0]);
-    printf("%d\n",source[1]);printf("%d\n",source[2]);printf("%d\n",source[3]);printf("%d\n",source[4]);
-
-
-
-    return 1;
-}
-
-
-int main()
-{
-
-    int constant1D[5] = {0, 1, 2, 3, 4};
-    copyArray1D(constant1D)
-
-    return 0;
+void f() { return;}
+int main() {
+int a=0;
+int b=a+1;
+f();
+return b;
 }

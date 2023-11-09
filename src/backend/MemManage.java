@@ -1,4 +1,4 @@
-package backend.primitive;
+package backend;
 //这个类用来进行内存管理
 
 import backend.MyStack;
@@ -27,9 +27,9 @@ public class MemManage {
 
     private void init() {
         if (config.optimization){
-            TEMP_UP=14;
-            GLOBAL_DOWN=14;
-            GLOBAL_UP=26;
+            TEMP_UP=16;
+            GLOBAL_DOWN=TEMP_UP;
+            GLOBAL_UP=17;
         }
         for (int i=0;i<RealRegister.RegName.length;i++){
             tempRegList.add(new RealRegister(RealRegister.RegName[i]));

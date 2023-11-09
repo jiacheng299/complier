@@ -1,8 +1,5 @@
-package backend.primitive;
+package backend;
 
-import backend.*;
-import backend.Record;
-import backend.optimization.Counter;
 import ir.Basic.*;
 import ir.Instruction.*;
 import ir.Module;
@@ -61,6 +58,7 @@ public class codeToMips {
         if (config.optimization){
             Counter counter=new Counter(curFunction);
             ArrayList<String> varList=counter.analyse();
+            System.out.println(varList);
             myMemManage.setGlobalReg(varList);
         }
         //先计算函数所需内存
@@ -510,7 +508,153 @@ public class codeToMips {
     }
 
     private void handleBinaryInstruction(BaseInstruction instruction, boolean b) {
-        handleBinaryInstruction(instruction);
+        RealRegister reg1=lookup(instruction.value1);
+        RealRegister reg2=null;
+        String reg1name=reg1.name;
+        String reg2name;
+        if (instruction.value2 instanceof Const){
+            reg2name=instruction.value2.getName();
+        }
+        else {
+            reg2 = lookup(instruction.value2);
+            reg2name = reg2.name;
+        }
+
+        RealRegister reg0=myMemManage.getTempReg(instruction.result.getName());
+        if (((BinaryInstruction) instruction).opCode==OpCode.add){
+            mipsInstructions.add(new MipsInstruction(MipsType.addu,reg0.name,reg1name,reg2name));
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.sub){
+            mipsInstructions.add(new MipsInstruction(MipsType.sub,reg0.name,reg1name,reg2name));
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.mul){
+            if (instruction.value2 instanceof Const) {
+                mulOptimization(reg0.name,reg1name,reg2name);
+            }
+            else mipsInstructions.add(new MipsInstruction(MipsType.mul,reg0.name,reg1name,reg2name));
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.sdiv){
+            if (instruction.value2 instanceof Const) {
+                divOptimization(reg0.name,reg1name,reg2name,"div");
+            }
+            else{
+                mipsInstructions.add(new MipsInstruction(MipsType.div,reg1name,reg2name));
+                mipsInstructions.add(new MipsInstruction(MipsType.mflo,reg0.name));
+            }
+        }
+        else if (((BinaryInstruction) instruction).opCode==OpCode.srem){
+            if (instruction.value2 instanceof Const){
+                divOptimization(reg0.name,reg1name,reg2name,"srem");
+            }
+            else{
+                mipsInstructions.add(new MipsInstruction(MipsType.div,reg1name,reg2name));
+                mipsInstructions.add(new MipsInstruction(MipsType.mfhi,reg0.name));
+            }
+        }
+        MyStack stack=myMemManage.getStackReg(instruction.result.getName());
+        mipsInstructions.add(new MipsInstruction(MipsType.sw, reg0.name,"$sp",stack.getIndex()));
+        myMemManage.freeTempReg(reg0);
+        myMemManage.freeTempReg(reg1);
+        if(reg2!=null)myMemManage.freeTempReg(reg2);
+    }
+
+    private void divOptimization(String res, String op1, String op2,String op) {
+        final int bitsOfInt = 32;
+        int imm = Integer.parseInt(op2);
+        int abs = (imm < 0) ? (-imm) : imm;
+        long[] multiplier = choose_multiplier(abs, bitsOfInt - 1);
+        long m = multiplier[0];
+        long sh_post = multiplier[1];
+        long l = multiplier[2];
+        RealRegister tempReg = myMemManage.getTempReg("temp"+tempRegisterIndex++);
+        if (imm == 1) {
+            mipsInstructions.add(new MipsInstruction(MipsType.addu, res, op1, "$zero"));
+        } else if (imm == -1) {
+            mipsInstructions.add(new MipsInstruction(MipsType.subu, res, "$zero", op1));
+        } else if (abs == 1 << l) {
+            //q = SRA(op1 + SRL(SRA(op1, sh-1),bitsOfInt-sh),sh);
+            int sh = bitsOfInt - 1 - Integer.numberOfLeadingZeros(abs);
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, tempReg.name, op1, Integer.toString(sh - 1)));
+            mipsInstructions.add(new MipsInstruction(MipsType.srl, tempReg.name, tempReg.name, Integer.toString(bitsOfInt - sh)));
+            mipsInstructions.add(new MipsInstruction(MipsType.addu, tempReg.name, tempReg.name, op1));
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, res, tempReg.name, Integer.toString(sh)));
+            myMemManage.freeTempReg(tempReg);
+        } else if (m < (1L << (bitsOfInt - 1))) {
+            // q = SRA(MULSH(m, n), shpost) - XSIGN(n);
+            mipsInstructions.add(new MipsInstruction(MipsType.addiu, tempReg.name, "$zero", Long.toString(m)));
+            mipsInstructions.add(new MipsInstruction(MipsType.mult, tempReg.name, op1));
+            mipsInstructions.add(new MipsInstruction(MipsType.mfhi, tempReg.name));
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, res, tempReg.name, Long.toString(sh_post)));
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, tempReg.name, op1, Integer.toString(bitsOfInt - 1)));
+            mipsInstructions.add(new MipsInstruction(MipsType.subu, res, res, tempReg.name));
+        } else {
+            // q = SRA(n + MULSH(m - 2^N, n), shpost)- XSIGN(n);
+            mipsInstructions.add(new MipsInstruction(MipsType.addiu, tempReg.name, "$zero", Long.toString(m - (1L << bitsOfInt))));
+            mipsInstructions.add(new MipsInstruction(MipsType.mult, tempReg.name, op1));
+            mipsInstructions.add(new MipsInstruction(MipsType.mfhi, tempReg.name));
+            mipsInstructions.add(new MipsInstruction(MipsType.addu, tempReg.name, tempReg.name, op1));
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, res, tempReg.name, Long.toString(sh_post)));
+            mipsInstructions.add(new MipsInstruction(MipsType.sra, tempReg.name, op1, Integer.toString(bitsOfInt - 1)));
+            mipsInstructions.add(new MipsInstruction(MipsType.subu, res, res, tempReg.name));
+        }
+        if (imm < 0) {
+            mipsInstructions.add(new MipsInstruction(MipsType.subu, res, "$zero", res));
+        }
+        if (op.equals("srem")) {
+            mipsInstructions.add(new MipsInstruction(MipsType.mul, tempReg.name, res, op2));
+            mipsInstructions.add(new MipsInstruction(MipsType.subu, res, op1, tempReg.name));
+        }
+        myMemManage.freeTempReg(tempReg);
+    }
+
+    public static long[] choose_multiplier(int d, int prec) {
+        int N = 32;
+        long l = (long) Math.ceil((Math.log(d) / Math.log(2)));
+        long sh_post = l;
+        long m_low = (long) Math.floor(Math.pow(2, N + l) / d);
+        long m_high = (long) Math.floor((Math.pow(2, N + l) + Math.pow(2, N + l - prec)) / d);
+        while ((Math.floor(m_low >> 1) < Math.floor(m_high >> 1)) && sh_post > 0) {
+            m_low = (long) Math.floor(m_low >> 1);
+            m_high = (long) Math.floor(m_high >> 1);
+            sh_post = sh_post - 1;
+        }
+        return new long[]{m_high, sh_post, l};
+    }
+
+    private void mulOptimization(String res, String reg1name, String reg2name) {
+        int bitsOfInt = 32;
+        int imm = Integer.parseInt(reg2name);
+        int abs = (imm < 0) ? (-imm) : imm;
+        if (abs == 0) {
+            mipsInstructions.add(new MipsInstruction(MipsType.addu, res, "$zero", "$zero"));
+        } else if ((abs & (abs - 1)) == 0) {
+            // imm 是 2 的幂
+            int i=0;
+            for (i=0;abs!=1;i++){
+                abs=abs>>1;
+            }
+            mipsInstructions.add(new MipsInstruction(MipsType.sll, res, reg1name, Integer.toString(i)));
+            if (imm < 0) {
+                mipsInstructions.add(new MipsInstruction(MipsType.subu, res, "$zero", res));
+            }
+        }//如果abs是2的n次幂加2的m次幂
+        else if(Integer.bitCount(abs)==2){
+            int left = bitsOfInt - 1 - Integer.numberOfLeadingZeros(abs);
+            int right = Integer.numberOfTrailingZeros(abs);
+            RealRegister temp1=myMemManage.getTempReg("temp"+tempRegisterIndex++);
+            RealRegister temp2=myMemManage.getTempReg("temp"+tempRegisterIndex++);
+            mipsInstructions.add(new MipsInstruction(MipsType.sll,temp1.name,reg1name,Integer.toString(left)));
+            mipsInstructions.add(new MipsInstruction(MipsType.sll,temp2.name,reg1name,Integer.toString(right)));
+            mipsInstructions.add(new MipsInstruction(MipsType.add,res,temp1.name,temp2.name));
+            if (imm < 0) {
+                mipsInstructions.add(new MipsInstruction(MipsType.subu, res, "$zero", res));
+            }
+            myMemManage.freeTempReg(temp1);
+            myMemManage.freeTempReg(temp2);
+        }
+        else {
+           mipsInstructions.add(new MipsInstruction(MipsType.mul, res, reg1name,reg2name));
+        }
     }
 
     private void handleGetElementPtr(BaseInstruction instruction, boolean b) {
