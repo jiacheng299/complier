@@ -65,6 +65,7 @@ public class BuildFactory {
     public void resetId1(){this.id=1;}
     public void createBranchInst(BasicBlock basicBlock,Value cond,Value trueblock,Value falseblock){
         BranchInstruction branchInst = new BranchInstruction(cond,trueblock,falseblock);
+
         if (!basicBlock.hasTerminator())basicBlock.addInstruction(branchInst);
         basicBlock.setHasTerminator();
     }

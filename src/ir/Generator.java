@@ -428,7 +428,9 @@ public class Generator {
                 falseBlock=judge;
                 currentFunction.addBasicBlock(judge);
             }
-            if (!(lOrExpNode.getlAndExpNodes().get(i).getEqExpNodes().size()>1)) buildFactory.createBranchInst(currentBasicBlock,value,ifblock,falseBlock);
+            if (!(lOrExpNode.getlAndExpNodes().get(i).getEqExpNodes().size()>1)) {
+                buildFactory.createBranchInst(currentBasicBlock,value,ifblock,falseBlock);
+            }
             if (i!=lOrExpNode.getlAndExpNodes().size()-1) currentBasicBlock=falseBlock;
         }
     }

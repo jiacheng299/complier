@@ -64,10 +64,10 @@ public class Compiler {
             Generator generator=new Generator();
             generator.start(parser.getEntrance());
             Module.getModule().print();
-            codeToMips codegen=new codeToMips(Module.getModule());
-            codegen.start();
+            codeToMips.codegen=new codeToMips(Module.getModule());
+            codeToMips.codegen.start();
             System.setOut(RedirectSystemOut.mips);
-            for (MipsInstruction mipsInstruction: codegen.mipsInstructions) mipsInstruction.print();
+            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
         }
 
     }
