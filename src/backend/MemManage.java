@@ -27,9 +27,9 @@ public class MemManage {
 
     private void init() {
         if (config.optimization){
-            TEMP_UP=16;
+            TEMP_UP=14;
             GLOBAL_DOWN=TEMP_UP;
-            GLOBAL_UP=17;
+            GLOBAL_UP=14;
         }
         for (int i=0;i<RealRegister.RegName.length;i++){
             tempRegList.add(new RealRegister(RealRegister.RegName[i]));
@@ -61,7 +61,10 @@ public class MemManage {
                 return tempRegList.get(i);
             }
         }
-        return null;
+        MyStack cun=getStackReg(tempVirtualRegList[TEMP_DOWN].name);
+        codeToMips.codegen.mipsInstructions.add(new MipsInstruction(MipsType.sw,tempRegList.get(TEMP_DOWN).name,"$sp", cun.getIndex()));
+        tempVirtualRegList[TEMP_DOWN]=new VirtualRegister(virtualNum);
+        return tempRegList.get(TEMP_DOWN);
     }
     public RealRegister lookupTemp(String virtualNum){
         RealRegister res = null;
