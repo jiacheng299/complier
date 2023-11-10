@@ -9,12 +9,10 @@ import backend.VirtualRegister;
 import java.util.*;
 import config.*;
 public class MemManage {
-    public HashSet<String> globalSet = new HashSet<>();
     public Integer stackPointer=0;
     public HashMap<VirtualRegister, MyStack> virtual2Stack=new HashMap<>();
     public HashMap<String,RealRegister> virtual2Reg=new HashMap<>();
     public List<RealRegister>tempRegList=new ArrayList<>();
-    public HashSet<String> params=new HashSet<>();
     public VirtualRegister[] tempVirtualRegList=new VirtualRegister[RealRegister.RegName.length];
     public List<Record> records=new ArrayList<>();
     public Integer TEMP_DOWN=8;
@@ -61,7 +59,10 @@ public class MemManage {
                 return tempRegList.get(i);
             }
         }
-        MyStack cun=getStackReg(tempVirtualRegList[TEMP_DOWN].name);
+        MyStack temp=lookupStack(tempVirtualRegList[TEMP_DOWN].name);
+        MyStack cun;
+        if (temp==null) cun=getStackReg(tempVirtualRegList[TEMP_DOWN].name);
+        else cun=temp;
         codeToMips.codegen.mipsInstructions.add(new MipsInstruction(MipsType.sw,tempRegList.get(TEMP_DOWN).name,"$sp", cun.getIndex()));
         tempVirtualRegList[TEMP_DOWN]=new VirtualRegister(virtualNum);
         return tempRegList.get(TEMP_DOWN);
@@ -85,16 +86,13 @@ public class MemManage {
             tempVirtualRegList[tempReg.getNum()].name="";
         }
     }
-    public boolean isParameter(String str){
-        if (params.contains(str)) return true;
-        else return false;
-    }
 
     public void clear() {
         stackPointer=0;
         virtual2Stack.clear();
         virtual2Reg.clear();
-        for (VirtualRegister virtualRegister:tempVirtualRegList){
+        for (int i=TEMP_DOWN;i<GLOBAL_UP;i++){
+            VirtualRegister virtualRegister=tempVirtualRegList[i];
             virtualRegister.free=true;
             virtualRegister.name="";
         }

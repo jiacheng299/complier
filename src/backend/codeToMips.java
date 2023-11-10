@@ -161,8 +161,7 @@ public class codeToMips {
         if (branchInstruction.cond!=null){
             RealRegister reg0=myMemManage.lookupTemp(branchInstruction.cond.getName());
             mipsInstructions.add(new MipsInstruction(MipsType.beq,reg0.name,"$zero",curFunction.getName()+"_label_"+branchInstruction.value2.getName().replace("%","_")));
-            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value2.getName().replace("%","_")));
-
+            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value1.getName().replace("%","_")));
             myMemManage.freeTempReg(reg0);
         }
         else{
@@ -208,9 +207,11 @@ public class codeToMips {
             RealRegister res=myMemManage.lookupTemp(callInstruction.funcRParams.get(i).getName());
             if (res!=null) myMemManage.freeTempReg(res);
         }
-        if (callInstruction.function.getName().equals("putint")||callInstruction.function.getName().equals("putch")||callInstruction.function.getName().equals("getint")){
-            functionIO(callInstruction);
-            return ;
+        if (config.optimization){
+            if (callInstruction.function.getName().equals("putint")||callInstruction.function.getName().equals("putch")||callInstruction.function.getName().equals("getint")){
+                functionIO(callInstruction);
+                return ;
+            }
         }
         //保存现场
         for (int i=myMemManage.TEMP_DOWN;i<myMemManage.GLOBAL_UP;i++){
@@ -487,7 +488,6 @@ public class codeToMips {
             }
         }
         mipsInstructions.add(instruction);
-        myMemManage.globalSet.add(global.getName().replace("@",""));
     }
     //找到除了全局变量以外的所有变量所处寄存器位置
     private RealRegister lookup(Value value){
