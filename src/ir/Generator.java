@@ -9,6 +9,7 @@ import node.*;
 import symbol.SymbolInfo;
 import symbol.SymbolTableNode;
 
+import java.security.cert.CertPath;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -621,7 +622,9 @@ public class Generator {
         //LVal → Ident {'[' Exp ']'}'
         Value ident=currentValueTable.searchValue(lValNode.getIdent().getValue());
         if (currentBasicBlock == null){
-            if (ident.getType()==ValueType.i32) return ident;
+            if (ident.getType()==ValueType.i32) {
+                return new Const(ident.getNum().toString());
+            }
             else if (ident.getType()==ValueType.onearray){
                 Value index1=handleExp(lValNode.getExpNodes().get(0));
                 return new Const(ident.arrayNum.get(Integer.parseInt(index1.getName())));
@@ -633,6 +636,9 @@ public class Generator {
             }
         }
         if (ident.getType()==ValueType.i32){
+            if (ident.isConst) {
+                return new Const(ident.getNum().toString());
+            }
             User user=new User(buildFactory.getId(), ident.getType());
             buildFactory.createLoadInst(currentBasicBlock,user,ident);
             return user;
@@ -640,6 +646,11 @@ public class Generator {
         //一维数组
         else if (ident.getType()==ValueType.onearray){
             if (lValNode.getExpNodes().size()==1){
+                if (ident.isConst){
+                    Value value1=handleExp(lValNode.getExpNodes().get(0));
+                    if (value1.isConst) return new Const(ident.arrayNum.get(value1.getNum()));
+                    else if (value1 instanceof Const) return new Const(ident.arrayNum.get(Integer.parseInt(value1.getName())));
+                }
                 Value value1=handleExp(lValNode.getExpNodes().get(0));
                 Value user=buildFactory.createGetElementPtr(currentBasicBlock,ident,new Const("0"),value1);
                 User tempuser=new User(buildFactory.getId(), ValueType.i32);
@@ -658,6 +669,16 @@ public class Generator {
 
         } else if (ident.getType()==ValueType.twoarray) {
             if (lValNode.getExpNodes().size()==2){
+                if (ident.isConst){
+                    Value value1=handleExp(lValNode.getExpNodes().get(0));
+                    Value value2=handleExp(lValNode.getExpNodes().get(1));
+                    Integer index1=null,index2=null;
+                    if (value1.isConst) index1=value1.getNum();
+                    else if (value1 instanceof Const) index1=Integer.parseInt(value1.getName());
+                    if (value2.isConst) index2=value2.getNum();
+                    else if (value2 instanceof Const) index2=Integer.parseInt(value2.getName());
+                    if (value1!=null&&value2!=null) return new Const(ident.arrayNum.get(index1*Integer.parseInt(ident.twoarrayNum)+index2));
+                }
                 Value value1=handleExp(lValNode.getExpNodes().get(0));
                 Value value2=handleExp(lValNode.getExpNodes().get(1));
                 Value temp=addBinaryInstruction(value1,new Const(ident.twoarrayNum),OpCode.mul);
@@ -829,6 +850,7 @@ public class Generator {
                 }
                 buildFactory.createAllocateInst(currentBasicBlock,user,param);
                 handleConstInitVal(user,constDefNode.getConstInitValNode());
+                user.isConst=true;
                 currentValueTable.addValue(constDefNode.getIdent().getValue(),user);
             }
             //一维数组
@@ -838,6 +860,7 @@ public class Generator {
                 if (btype.getInttk()!=null){
                     user= new User(buildFactory.getId(), ValueType.onearray);
                     param.setType(ValueType.onearray);
+                    user.isConst=true;
                     user.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
                     param.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
                 }
@@ -851,6 +874,7 @@ public class Generator {
                 Value param=new Value();
                 if (btype.getInttk()!=null){
                     user= new User(buildFactory.getId(), ValueType.twoarray);
+                    user.isConst=true;
                     param.setType(ValueType.twoarray);
                     user.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
                     param.setOnearrayNum(((Const)handleConstExp(constDefNode.getConstExpNodes().get(0))).getName());
@@ -869,6 +893,8 @@ public class Generator {
         if (constInitValNode.getConstExpNode()!=null){
             Value value=handleConstExp(constInitValNode.getConstExpNode());
             buildFactory.createStoreInst(currentBasicBlock,value,user);
+            if (value.isConst) user.setNum(value.getNum());
+            else if (value instanceof Const) user.setNum(Integer.parseInt(value.getName()));
         }
         //一维数组
         else if (user.getType()==ValueType.onearray){
@@ -972,8 +998,14 @@ public class Generator {
                     user= new User(buildFactory.getId(), ValueType.onearray);
                     param.setType(ValueType.onearray);
                     Value value=handleConstExp(varDefNode.getConstExpNodes().get(0));
-                    user.setOnearrayNum(((Const)value).getName());
-                    param.setOnearrayNum(((Const)value).getName());
+                    if (value instanceof Const){
+                        user.setOnearrayNum(value.getName());
+                        param.setOnearrayNum(value.getName());
+                    }
+                    else{
+                        user.setOnearrayNum(value.getNum().toString());
+                        param.setOnearrayNum( value.getNum().toString());
+                    }
                 }
                 buildFactory.createAllocateInst(currentBasicBlock,user,param);
                 if (varDefNode.getInitValNode() != null){

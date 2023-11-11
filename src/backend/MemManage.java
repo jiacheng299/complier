@@ -91,6 +91,10 @@ public class MemManage {
         stackPointer=0;
         virtual2Stack.clear();
         virtual2Reg.clear();
+        for (int i=4;i<8;i++){
+            tempVirtualRegList[i].free=true;
+            tempVirtualRegList[i].name="";
+        }
         for (int i=TEMP_DOWN;i<GLOBAL_UP;i++){
             VirtualRegister virtualRegister=tempVirtualRegList[i];
             virtualRegister.free=true;
