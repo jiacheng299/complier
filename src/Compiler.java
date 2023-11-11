@@ -61,13 +61,13 @@ public class Compiler {
         System.setOut(RedirectSystemOut.ir);
 
         if (config.generator){
-            Generator generator=new Generator();
-            generator.start(parser.getEntrance());
-            Module.getModule().print();
-            codeToMips.codegen=new codeToMips(Module.getModule());
-            codeToMips.codegen.start();
-            System.setOut(RedirectSystemOut.mips);
-            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
+//            Generator generator=new Generator();
+//            generator.start(parser.getEntrance());
+//            Module.getModule().print();
+//            codeToMips.codegen=new codeToMips(Module.getModule());
+//            codeToMips.codegen.start();
+//            System.setOut(RedirectSystemOut.mips);
+//            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
         }
 
     }
