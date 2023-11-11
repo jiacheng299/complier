@@ -53,4 +53,11 @@ public class Value {
     public void setArrayNum(List<String> arrayNum){
         this.arrayNum=arrayNum;
     }
+
+    public Integer getNum() {
+        return num;
+    }
+    public void setNum(Integer num){
+        this.num=num;
+    }
 }
