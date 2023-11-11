@@ -61,7 +61,6 @@ public class codeToMips {
         if (config.optimization){
             Counter counter=new Counter(curFunction);
             ArrayList<String> varList=counter.analyse();
-            System.out.println(curFunction.getName()+varList);
             myMemManage.setGlobalReg(varList);
         }
         //先计算函数所需内存

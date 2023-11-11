@@ -1,10 +1,5 @@
-
-const int b=1;
-const int  adsa[2]={1,2};
-int asdsadsa[adsa[b]]={1,2};
-int cas=1;
-int main() {
+int main(){
 const int a[3]={1,2,3};
-int temp[a[1]]={1,2};
+int a[a[2]]={a[0],a[1],a[2]};
 return 0;
 }
