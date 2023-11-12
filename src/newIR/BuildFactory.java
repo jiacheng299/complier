@@ -121,4 +121,11 @@ public class BuildFactory {
         currentBlock.addInst(branchInst);
         currentBlock.hasTerminator=true;
     }
+
+    public void createBranchInst(BasicBlock currentBlock, Value value) {
+        BranchInstruction branchInst = new BranchInstruction(value);
+
+        currentBlock.addInst(branchInst);
+        currentBlock.hasTerminator=true;
+    }
 }

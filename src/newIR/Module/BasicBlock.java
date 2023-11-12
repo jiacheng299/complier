@@ -12,6 +12,11 @@ public class BasicBlock extends Value{
     public String name;
     public List<Instruction> instructions;
     public boolean hasTerminator = false;
+    public BasicBlock outblock;//后继block
+    public BasicBlock nextblock;//前驱block
+    public boolean enterLoop=false;
+    public boolean exitLoop=false;
+
     public BasicBlock() {
 
     }
@@ -42,5 +47,8 @@ public class BasicBlock extends Value{
             System.out.print("    ");
             instruction.print();
         }
+    }
+
+    public Value getNextblock() {
     }
 }

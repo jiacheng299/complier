@@ -1,6 +1,7 @@
 package newIR;
 
 import Token.TokenType;
+
 import newIR.Instruction.OpCode;
 import newIR.Module.BasicBlock;
 import newIR.Module.Function;
@@ -14,6 +15,7 @@ import node.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 public class BuildIR {
     public MyModule module;
@@ -22,6 +24,7 @@ public class BuildIR {
     private HashMap<String,Function> functionList= new HashMap<>();
     public BuildFactory buildFactory=BuildFactory.getBuildFactory();
     private Function currentFunction=null;
+    private Stack<BasicBlock> loop=new Stack<>();
 
     private Value addBinaryInstruction(Value value1, Value value2, OpCode opCode) {
         if (value1 instanceof Const && value2 instanceof Const)
@@ -676,14 +679,61 @@ public class BuildIR {
             currentBlock.enterNextBlock(outblock);
             currentFunction.appendBlock(outblock);
         }//| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
-        else if () {
-
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.For) {
+            BasicBlock loopblock=new BasicBlock();
+            BasicBlock outblock=new BasicBlock();
+            BasicBlock ifblock=null;
+            BasicBlock forstmt=new BasicBlock();
+            currentFunction.appendBlock(loopblock);
+            if (stmtNode.getForStmt1()!=null){
+                visitForStmt(stmtNode.getForStmt1());
+            }
+            //判断语句单独拿出来作为一个基本块
+            if (stmtNode.getCondNode()!=null)  {
+                ifblock=new BasicBlock();
+                ifblock.setName(buildFactory.getId());
+                currentFunction.appendBlock(ifblock);
+                buildFactory.createBranchInst(currentBlock,ifblock);
+                currentBlock=currentBlock.enterNextBlock(ifblock);
+                visitCond(stmtNode.getCondNode(),loopblock,null,outblock);
+            }
+            else{
+                ifblock=loopblock;
+                buildFactory.createBranchInst(currentBlock,ifblock);
+            }
+            //设置循环基本块
+            loopblock.setName(buildFactory.getId());
+            loopblock.enterLoop=true;
+            currentBlock=currentBlock.enterNextBlock(loopblock);
+            loopblock.outblock=outblock;
+            loop.push(loopblock);
+            if (stmtNode.getForStmt2()!=null) loopblock.nextblock=forstmt;
+            else loopblock.nextblock=ifblock;
+            visitStmt(stmtNode.getStmtNodes().get(0));
+            loop.pop();
+            //每次执行完循环块后执行一遍forstmt块，如果没有则不执行
+            if (stmtNode.getForStmt2()!=null){
+                currentFunction.appendBlock(forstmt);
+                buildFactory.createBranchInst(currentBlock,forstmt);
+                forstmt.setName(buildFactory.getId());
+                currentBlock=currentBlock.enterNextBlock(forstmt);
+                visitForStmt(stmtNode.getForStmt2());
+                buildFactory.createBranchInst(currentBlock,ifblock);
+            }
+            else{
+                buildFactory.createBranchInst(currentBlock,ifblock);
+            }
+            outblock.setName(buildFactory.getId());
+            outblock.exitLoop=true;
+            currentBlock=currentBlock.enterNextBlock(outblock);
+            currentFunction.appendBlock(outblock);
         } //| 'break' ';'
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Break){
             //buildFactory.createBrInst(currentBlock,currentBlock.breakBlock);
+            buildFactory.createBranchInst(currentBlock,loop.peek().outblock);
         }//| 'continue' ';'
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Continue) {
-           // buildFactory.createBrInst(currentBlock, currentBlock.continueBlock);
+            buildFactory.createBranchInst(currentBlock,loop.peek().getNextblock());
         }//| 'return' [Exp] ';'
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Return){
             if (stmtNode.getExpNode()!=null) {
@@ -702,7 +752,45 @@ public class BuildIR {
         }
         //| 'printf''('FormatString{','Exp}')'';'
         else{
+            int expIndex=0;
+            String str=stmtNode.getFormatStringtk().getValue();
+            for (int i=0;i<str.length();i++){
+                if (str.charAt(i)=='"') continue;
+                if(str.charAt(i)=='%'){
+                    //出现%说明有一个对应的exp,对exp进行一个处理
+                    i++;
+                    //出现的为int，可以再增加新的类型
+                    if(str.charAt(i)=='d'){
+                        List<Value> tempValue=new ArrayList<>();
+                        tempValue.add(visitExp(stmtNode.getExpNodes().get(expIndex)));
+                        buildFactory.createCallInst(currentBlock,functionList.get("putint"),tempValue);
+                        expIndex++;
+                    }
+                }
+                else if (str.charAt(i)=='\\'&&str.charAt(i+1)=='n'){
+                    List<Value> tempValue=new ArrayList<>();
+                    tempValue.add(new Value("10",ValueType.i32));
+                    buildFactory.createCallInst(currentBlock,functionList.get("putch"),tempValue);
+                    i++;
+                }
+                else{
+                    List<Value> tempValue=new ArrayList<>();
+                    tempValue.add(new Value(Integer.toString(str.charAt(i)-0),ValueType.i32));
+                    buildFactory.createCallInst(currentBlock,functionList.get("putch"),tempValue);
+                }
 
+            }
+        }
+    }
+
+    private void visitForStmt(ForStmtNode forStmt1) {
+        //ForStmt → LVal '=' Exp
+        if (forStmt1.getlValNode()!=null){
+            Value tempValue=visitLvalLeft(forStmt1.getlValNode());
+            if (forStmt1.getExpNode()!=null){
+                Value initValue=visitExp(forStmt1.getExpNode());
+                buildFactory.createStoreInst(currentBlock,initValue,tempValue);
+            }
         }
     }
 

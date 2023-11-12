@@ -10,6 +10,15 @@ public class Value {
     public Integer onearrayNum=null;
     public Integer twoarrayNum=null;
     public List<Value> arrayNum;
+    public Value(String name,ValueType valueType){
+        this.name=name;
+        this.valueType=valueType;
+    }
+
+    public Value() {
+
+    }
+
     public String printArrayType() {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
