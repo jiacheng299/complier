@@ -1,7 +1,6 @@
 package newIR;
 
 import Token.TokenType;
-import newIR.Instruction.CallInstruction;
 import newIR.Instruction.OpCode;
 import newIR.Module.BasicBlock;
 import newIR.Module.Function;
@@ -22,6 +21,8 @@ public class BuildIR {
     public BasicBlock currentBlock;
     private HashMap<String,Function> functionList= new HashMap<>();
     public BuildFactory buildFactory=BuildFactory.getBuildFactory();
+    private Function currentFunction=null;
+
     private Value addBinaryInstruction(Value value1, Value value2, OpCode opCode) {
         if (value1 instanceof Const && value2 instanceof Const)
             return eval((Const) value1, (Const) value2, opCode);
@@ -66,14 +67,79 @@ public class BuildIR {
         Function getint=buildFactory.createFunction(module,"getint",ValueType.i32,false);
         Function putint=buildFactory.createFunction(module,"putint",ValueType.VOID,false);
         Function putch=buildFactory.createFunction(module,"putch",ValueType.VOID,false);
+        functionList.put("getint",getint);
+        functionList.put("putint",putint);
+        functionList.put("putch",putch);
         for (DeclNode decl : node.getDeclNodes()){
             visitDecl(decl);
         }
         for (FuncDefNode f : node.getFuncDefNodes()){
-           // visitFuncDef(f);
+            visitFuncDef(f);
         }
         visitMainFuncDef(node.getMainFuncDefNode());
     }
+
+    private void visitFuncDef(FuncDefNode f) {
+        // FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
+        buildFactory.resetId0();
+        String name=f.getIdent().getValue();
+        Function function;
+        if (f.getFuncTypeNode().getInttk()!=null) function=buildFactory.createFunction(module,name,ValueType.i32,true);
+        else function=buildFactory.createFunction(module,name,ValueType.VOID,true);
+        currentFunction=function;
+        functionList.put(name,function);
+        currentBlock=new BasicBlock();
+        function.appendBlock(currentBlock);
+        currentValueTable=currentValueTable.enterNextTbale();
+        if (f.getFuncFParamsNode()!=null)   visitFuncFParams(f.getFuncFParamsNode(),function);
+        else  currentBlock.setName(buildFactory.getId());
+        for (BlockItemNode blockItemNode :f.getBlockNode().getBlockItemNodes()){
+            visitBlockItem(blockItemNode);
+        }
+        currentValueTable=currentValueTable.father;
+    }
+
+    private void visitFuncFParams(FuncFParamsNode funcFParamsNode, Function function) {
+        //FuncFParams → FuncFParam { ',' FuncFParam }
+        for (FuncFParamNode funcFParamNode:funcFParamsNode.getFuncFParamsNodes()){
+            Value param=visitFuncfParam(funcFParamNode);
+            function.params.add(param);
+        }
+        currentBlock.setName(buildFactory.getId());
+        int i=0;
+        for (Value param:function.params){
+            User alloc=buildFactory.createAllocateInst(currentBlock,param.valueType);
+            if (param.twoarrayNum!=null) alloc.twoarrayNum= param.twoarrayNum;
+            buildFactory.createStoreInst(currentBlock,param,alloc);
+            currentValueTable.addValue(funcFParamsNode.getFuncFParamsNodes().get(i).getIdent().getValue(), alloc);
+            i++;
+        }
+    }
+
+    private Value visitFuncfParam(FuncFParamNode funcFParamNode) {
+        //FuncFParam → BType Ident ['[' ']' { '[' ConstExp ']' }]
+        Var var = null;
+        if (funcFParamNode.getBtypenode().getInttk()!=null){
+            //传入的是普通变量
+            if (funcFParamNode.getLbracks().size()==0){
+                var=buildFactory.createVar(buildFactory.getId(),ValueType.i32,false);
+                currentValueTable.addValue(funcFParamNode.getIdent().getValue(), var);
+            }
+            //传入的是一维数组
+            else if (funcFParamNode.getLbracks().size()==1){
+                var=buildFactory.createVar(buildFactory.getId(),ValueType.pointer,false);
+                currentValueTable.addValue(funcFParamNode.getIdent().getValue(), var);
+            }
+            //传入的是二维数组
+            else{
+                var=buildFactory.createVar(buildFactory.getId(),ValueType.pointer,false);
+                var.twoarrayNum=visitConstExp(funcFParamNode.getConstExpNodes().get(0)).constNum;
+                currentValueTable.addValue(funcFParamNode.getIdent().getValue(), var);
+            }
+        }
+        return var;
+    }
+
     //这个decl是专门处理全局的变量的
     private void visitDecl(DeclNode decl) {
         //Decl → ConstDecl | VarDecl
@@ -214,8 +280,6 @@ public class BuildIR {
             return visitPrimaryExp(unaryExpNode.getPrimaryExpNode());
         } else if (unaryExpNode.getIdent()!=null) {
             Function function=functionList.get(unaryExpNode.getIdent().getValue());
-            CallInstruction callInstruction=null;
-            User user=null;
             List<Value> params=new ArrayList<>();
             if (unaryExpNode.getFuncRParamsNode() != null){
                 for (ExpNode expNode : unaryExpNode.getFuncRParamsNode().getExpNodes()){
@@ -223,16 +287,7 @@ public class BuildIR {
                     params.add(value);
                 }
             }
-            callInstruction=buildFactory.createCallInst(currentBlock,function);
-//            if (function.returnType!=ValueType.VOID){
-//                user=new User(buildFactory.getId(), function.returnType);
-//                callInstruction=buildFactory.createCallInst(currentBasicBlock,function,user);
-//
-//            }
-//            else{
-//                callInstruction = buildFactory.createCallInst(currentBasicBlock,function);
-//            }
-            for (Value value:params) callInstruction.addParam(value);
+            User user=buildFactory.createCallInst(currentBlock,function,params);
             return user;
         }
         else{
@@ -278,18 +333,122 @@ public class BuildIR {
         else if (value.valueType==ValueType.onearray){
             //说明要从一维数组中取一个int32
             if (getlValNode.getExpNodes().size()==1){
-
+                Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                if (value.isConst) {
+                    if (index1.isConst){
+                        return new Const(value.arrayNum.get(index1.constNum).toString());
+                    }
+                }
+                User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),index1);
+                User user=buildFactory.createLoadInst(currentBlock,tempUser);
+                return user;
             }
             //否则就是取一维数组的地址
+            User user=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),new Const("0"));
+            return user;
         }
         else if (value.valueType==ValueType.twoarray){
-
+            if (getlValNode.getExpNodes().size()==2){
+                Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                Value index2=visitExp(getlValNode.getExpNodes().get(1));
+                if (value.isConst){
+                    if (index1.isConst&&index2.isConst){
+                        return new Const(value.arrayNum.get(index1.constNum* value.twoarrayNum+index2.constNum).toString());
+                    }
+                }
+                Value temp=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
+                Value sum=addBinaryInstruction(temp,index2,OpCode.add);
+                User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                User user=buildFactory.createLoadInst(currentBlock,tempUser);
+                return user;
+            }//取二维数组的一维地址
+            else if (getlValNode.getExpNodes().size()==1){
+                Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                Value sum=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
+                User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                return tempUser;
+            }
+            else{
+                User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),new Const("0"));
+                return tempUser;
+            }
         }//从一个指针中取
         else{
+            if (getlValNode.getExpNodes().size()==0){
+                User user=buildFactory.createLoadInst(currentBlock,value);
+                return user;
+            }
+            else if (getlValNode.getExpNodes().size()==1){
+                //如果ident是二维，exp只有一个，说明传入的是一维
+                if (value.twoarrayNum!=null){
+                    User tempuser=buildFactory.createLoadInst(currentBlock,value);
+                    Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                    Value sum=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
+                    User user=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                    return user;
+                }
+                else{
+                    User tempuser=buildFactory.createLoadInst(currentBlock,value);
+                    Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                    User addr=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),index1);
+                    User user =buildFactory.createLoadInst(currentBlock,addr);
+                    return user;
+                }
 
+            }
+            else {
+                User tempuser=buildFactory.createLoadInst(currentBlock,value);
+                Value index1=visitExp(getlValNode.getExpNodes().get(0));
+                Value index2=visitExp(getlValNode.getExpNodes().get(1));
+                Value temp=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
+                Value sum=addBinaryInstruction(temp,index2,OpCode.add);
+                User addr=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                User user=buildFactory.createLoadInst(currentBlock,addr);
+                return user;
+            }
         }
     }
+    private Value visitLvalLeft(LValNode lValNode){
+        Value value=currentValueTable.searchValue(lValNode.getIdent().getValue());
+        if (value.valueType== ValueType.i32){
+            return value;
+        }
+        //LVal → Ident {'[' Exp ']'}'
+        else if (value.valueType==ValueType.onearray){
+            Value value1=visitExp(lValNode.getExpNodes().get(0));
+            Value user=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),value1);
+            return user;
+        }
+        else if (value.valueType== ValueType.twoarray){
+            Value value1=visitExp(lValNode.getExpNodes().get(0));
+            Value value2=visitExp(lValNode.getExpNodes().get(1));
+            Value temp=addBinaryInstruction(value1,new Const(value.twoarrayNum.toString()), OpCode.mul);
+            Value index=addBinaryInstruction(temp,value2, OpCode.add);
+            Value user=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),index);
+            return user;
+        }
 
+        else if (value.valueType== ValueType.pointer){
+            if (lValNode.getExpNodes().size()==1){
+                Value value1=visitExp(lValNode.getExpNodes().get(0));
+                User addr=buildFactory.createLoadInst(currentBlock,value);
+                User user=buildFactory.createGetElementPtr(currentBlock,addr,value1);
+                return user;
+            }
+            else{
+                Value value1=visitExp(lValNode.getExpNodes().get(0));
+                Value value2=visitExp(lValNode.getExpNodes().get(1));
+                Value temp=addBinaryInstruction(value1,new Const(value.twoarrayNum.toString()), OpCode.mul);
+                Value index=addBinaryInstruction(temp,value2, OpCode.add);
+                User tempuser=buildFactory.createLoadInst(currentBlock,value);
+                Value user=buildFactory.createGetElementPtr(currentBlock,tempuser,index);
+                return user;
+            }
+        }
+        else{
+            return null;
+        }
+    }
     private Value visitNumber(NumberNode numberNode) {
         return  new Const(numberNode.getNumber().getValue());
     }
@@ -320,6 +479,14 @@ public class BuildIR {
 
     private void visitMainFuncDef(MainFuncDefNode mainFuncDefNode) {
         //MainFuncDef → 'int' 'main' '(' ')' Block
+        Function function=buildFactory.createFunction(module,"main",ValueType.i32,true);
+        currentFunction=function;
+        buildFactory.resetId0();
+        BasicBlock block=new BasicBlock();
+        block.setName(buildFactory.getId());
+        currentBlock=currentBlock.enterNextBlock();
+        function.appendBlock(currentBlock);
+        currentValueTable=currentValueTable.enterNextTbale();
         for (BlockItemNode blockItemNode :mainFuncDefNode.getBlockNode().getBlockItemNodes()){
             visitBlockItem(blockItemNode);
         }
@@ -328,7 +495,7 @@ public class BuildIR {
     private void visitBlockItem(BlockItemNode blockItemNode) {
         //BlockItem → Decl | Stmt
         if (blockItemNode.getDeclnode()!=null)visitDecl(currentValueTable, blockItemNode.getDeclnode());
-        else visitStmt(blockItemNode);
+        else visitStmt(blockItemNode.getStmtnode());
     }
 
 
@@ -355,12 +522,14 @@ public class BuildIR {
         if (constDef.getConstExpNodes().size()==0){
             var=buildFactory.createVar(currentBlock,name,ValueType.i32,true);
             var.constNum=Integer.parseInt(visitConstExp(constDef.getConstInitValNode().getConstExpNode()).num);
+            visitConstInitVal2(var,constDef.getConstInitValNode());
         }
         else if (constDef.getConstExpNodes().size()==1){
             var=buildFactory.createVar(currentBlock,name,ValueType.onearray,true);
             List<Value> initValues=visitConstInitalVal(constDef.getConstInitValNode());
             var.onearrayNum=Integer.parseInt(visitConstExp(constDef.getConstExpNodes().get(0)).num);
             var.arrayNum=initValues;
+            visitConstInitVal2(var,constDef.getConstInitValNode());
         }
         else{
             var=buildFactory.createVar(currentBlock,name,ValueType.twoarray,true);
@@ -368,6 +537,7 @@ public class BuildIR {
             var.twoarrayNum=Integer.parseInt(visitConstExp(constDef.getConstExpNodes().get(1)).num);
             List<Value> initValues=visitConstInitalVal(constDef.getConstInitValNode());
             var.arrayNum=initValues;
+            visitConstInitVal2(var,constDef.getConstInitValNode());
         }
         currentValueTable.addValue(name,var);
     }
@@ -408,7 +578,33 @@ public class BuildIR {
         }
         currentValueTable.addValue(name,var);
     }
-
+    private void visitConstInitVal2(Value varReg, ConstInitValNode initValNode) {
+        // ConstInitVal → ConstExp|'{' [ ConstInitVal { ',' ConstInitVal } ] '}'
+        if (initValNode.getConstExpNode()!=null){
+            Value initVal= visitConstExp(initValNode.getConstExpNode());
+            buildFactory.createStoreInst(currentBlock,initVal,varReg);
+        }
+        else if (varReg.valueType==ValueType.onearray){
+            for (int i=0;i<initValNode.getConstInitValNodes().size();i++){
+                Value tempValue=visitConstExp(initValNode.getConstInitValNodes().get(i).getConstExpNode());
+                //先把数组对应的地址取出来
+                Value pointer=buildFactory.createGetElementPtr(currentBlock,varReg,new Const("0"),new Const(Integer.toString(i)));
+                buildFactory.createStoreInst(currentBlock,tempValue,pointer);
+            }
+        }
+        //二维数组
+        else{
+            for (int i=0;i<initValNode.getConstInitValNodes().size();i++){
+                for (int j=0;j<initValNode.getConstInitValNodes().get(i).getConstInitValNodes().size();j++){
+                    Value tempValue=visitConstExp(initValNode.getConstInitValNodes().get(i).getConstInitValNodes().get(j).getConstExpNode());
+                    //先把数组对应的地址取出来
+                    Integer index=i*Integer.parseInt(String.valueOf(varReg.twoarrayNum))+j;
+                    Value pointer=buildFactory.createGetElementPtr(currentBlock,varReg,new Const("0"),new Const(Integer.toString(index)));
+                    buildFactory.createStoreInst(currentBlock,tempValue,pointer);
+                }
+            }
+        }
+    }
     private void visitInitVal(Value varReg, InitValNode initValNode) {
         // InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'
         if (initValNode.getExpNode()!=null){
@@ -437,8 +633,188 @@ public class BuildIR {
         }
     }
 
-    private void visitStmt(BlockItemNode blockItemNode) {
+    private void visitStmt(StmtNode stmtNode) {
+        //LVal '=' Exp ';'
+        if (stmtNode.getStmtType()== StmtNode.StmtType.LvalAssignExp){
+            Value value=visitLvalLeft(stmtNode.getLvalnode());
+            Value exp=visitExp(stmtNode.getExpNode());
+            buildFactory.createStoreInst(currentBlock,exp,value);
+        }//| [Exp] ';'
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.Exp){
+            if (stmtNode.getExpNode()!=null){
+                visitExp(stmtNode.getExpNode());
+            }
+        }//| Block
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.Block){
+            currentValueTable.enterNextTbale();
+            for (BlockItemNode blockItemNode :stmtNode.getBlockNode().getBlockItemNodes()){
+                visitBlockItem(blockItemNode);
+            }
+            currentValueTable=currentValueTable.father;
+        }//| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.If){
+            BasicBlock ifblock=new BasicBlock();
+            BasicBlock outblock=new BasicBlock();
+            BasicBlock elseblock=null;
+            currentFunction.appendBlock(ifblock);
+            if (stmtNode.getElsetk() != null) {
+                elseblock=new BasicBlock();
+            }
+            visitCond(stmtNode.getCondNode(),ifblock,elseblock,outblock);
+            //处理ifblock
+            ifblock.setName(buildFactory.getId());
+            currentBlock=currentBlock.enterNextBlock(ifblock);
+            visitStmt(stmtNode.getStmtNodes().get(0));
+            //如果有else
+            if (stmtNode.getElsetk()!=null){
+                elseblock.setName(buildFactory.getId());
+                currentBlock=currentBlock.enterNextBlock(elseblock);
+                visitStmt(stmtNode.getStmtNodes().get(1));
+                currentFunction.appendBlock(elseblock);
+            }
+            outblock.setName(buildFactory.getId());
+            currentBlock.enterNextBlock(outblock);
+            currentFunction.appendBlock(outblock);
+        }//| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
+        else if () {
+
+        } //| 'break' ';'
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.Break){
+            //buildFactory.createBrInst(currentBlock,currentBlock.breakBlock);
+        }//| 'continue' ';'
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.Continue) {
+           // buildFactory.createBrInst(currentBlock, currentBlock.continueBlock);
+        }//| 'return' [Exp] ';'
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.Return){
+            if (stmtNode.getExpNode()!=null) {
+                Value value=visitExp(stmtNode.getExpNode());
+                buildFactory.createRetInst(currentBlock,value,ValueType.i32);
+            }
+            else{
+                buildFactory.createRetInst(currentBlock,new Value(),ValueType.VOID);
+            }
+        }
+        //| LVal '=' 'getint''('')'';'
+        else if (stmtNode.getStmtType()== StmtNode.StmtType.LvalAssignGetint) {
+            Value value=visitLvalLeft(stmtNode.getLvalnode());
+            User user=buildFactory.createCallInst(currentBlock,functionList.get("getint"),new ArrayList<>());
+            buildFactory.createStoreInst(currentBlock,user,value);
+        }
+        //| 'printf''('FormatString{','Exp}')'';'
+        else{
+
+        }
     }
+
+    private void visitCond(CondNode condNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
+        visitLOrExp(condNode.getlOrExpNode(), ifblock, elseblock, outblock);
+    }
+
+    private void visitLOrExp(LOrExpNode lOrExpNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock) {
+        //LOrExp → LAndExp {'||' LAndExp}
+        for (int i=0;i<lOrExpNode.getlAndExpNodes().size();i++) {
+            BasicBlock judge=null;
+            if (i!=lOrExpNode.getlAndExpNodes().size()-1) {
+                judge=new BasicBlock();
+            }
+            Value value=visitLandExp(lOrExpNode.getlAndExpNodes().get(i),ifblock,elseblock,outblock,judge);
+            BasicBlock falseBlock=null;
+            if (value.valueType== ValueType.i32){
+                User user=buildFactory.createIcmp(currentBlock,value,new Const("0"), OpCode.ne);
+                value=user;
+            }
+            //如果这是最后一个或判断
+            if (i==lOrExpNode.getlAndExpNodes().size()-1){
+                falseBlock=(elseblock==null?outblock:elseblock);
+            }
+            else{
+                judge.setName(buildFactory.getId());
+                falseBlock=judge;
+                currentFunction.appendBlock(judge);
+            }
+            if (!(lOrExpNode.getlAndExpNodes().get(i).getEqExpNodes().size()>1)) {
+                buildFactory.createBranchInst(currentBlock,value,ifblock,falseBlock);
+            }
+            if (i!=lOrExpNode.getlAndExpNodes().size()-1) currentBlock=currentBlock.enterNextBlock(falseBlock);
+        }
+    }
+
+    private Value visitLandExp(LAndExpNode lAndExpNode, BasicBlock ifblock, BasicBlock elseblock, BasicBlock outblock, BasicBlock nextblock) {
+        //LAndExp → EqExp { '&&' EqExp}
+        Value value=null;
+        if(lAndExpNode.getEqExpNodes().size()==1) return visitEqExp(lAndExpNode.getEqExpNodes().get(0));
+        for (int i=0;i<lAndExpNode.getEqExpNodes().size();i++) {
+            value=visitEqExp(lAndExpNode.getEqExpNodes().get(i));
+            if (value.valueType== ValueType.i32){
+                User user =buildFactory.createIcmp(currentBlock,value,new Const("0"), OpCode.ne);
+                value=user;
+            }
+            //如果这是与判断的最后一个判断
+            BasicBlock trueblock=null;
+            BasicBlock falseblock=null;
+            BasicBlock judge=new BasicBlock();
+            if (i==lAndExpNode.getEqExpNodes().size()-1){
+                trueblock=ifblock;
+                //如果这是cond的最后一个判断
+                if (nextblock == null){
+                    falseblock=elseblock==null?outblock:elseblock;
+                }
+                else{
+                    falseblock=nextblock;
+                }
+            }
+            else{
+                trueblock=judge;
+                judge.setName(buildFactory.getId());
+                currentFunction.appendBlock(judge);
+                //如果接下来没有或判断，那么这里出错就直接去else或者out
+                if (nextblock == null){
+                    falseblock=elseblock==null?outblock : elseblock;
+                }
+                else{
+                    falseblock=nextblock;
+                }
+            }
+            buildFactory.createBranchInst(currentBlock,value,trueblock,falseblock);
+            if (i!=lAndExpNode.getEqExpNodes().size()-1)currentBlock=currentBlock.enterNextBlock(trueblock);
+        }
+        return value;
+    }
+
+    private Value visitEqExp(EqExpNode eqExpNode) {
+        if (eqExpNode.getRelExpNodes().size()==1) return visitRelExp(eqExpNode.getRelExpNodes().get(0));
+        else{
+            Value value1=zext(visitRelExp(eqExpNode.getRelExpNodes().get(0)));
+            Value value2=zext(visitRelExp(eqExpNode.getRelExpNodes().get(1)));
+            OpCode opcode= OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(0).getType());
+            User user=buildFactory.createIcmp(currentBlock,value1,value2,opcode);
+            for (int i=2;i<eqExpNode.getRelExpNodes().size();i++){
+                value1=zext(user);
+                value2=visitRelExp(eqExpNode.getRelExpNodes().get(i));
+                opcode= OpCode.Token2Op(eqExpNode.getEqlOrNeqs().get(i-1).getType());
+                user= buildFactory.createIcmp(currentBlock,value1,value2,opcode);
+            }
+            return user;
+        }
+    }
+
+    private Value visitRelExp(RelExpNode relExpNode) {
+        if (relExpNode.getAddExpNodes().size()==1) return visitAddExp(relExpNode.getAddExpNodes().get(0));
+        else{
+            Value value1=zext(visitAddExp(relExpNode.getAddExpNodes().get(0)));
+            Value value2=zext(visitAddExp(relExpNode.getAddExpNodes().get(1)));
+            OpCode opcode= OpCode.Token2Op(relExpNode.getOps().get(0).getType());
+            User user =buildFactory.createIcmp(currentBlock,value1,value2,opcode);
+            for (int i=2;i<relExpNode.getAddExpNodes().size();i++){
+                value1=zext(user);
+                value2=visitAddExp(relExpNode.getAddExpNodes().get(i));
+                opcode= OpCode.Token2Op(relExpNode.getOps().get(i-1).getType());
+                user= buildFactory.createIcmp(currentBlock,value1,value2,opcode);
+            }
+            return user;
+        }
+    }
+
     private ValueType visitBtype(BTypeNode getbTypeNode) {
         if (getbTypeNode.getInttk()!=null){
             return ValueType.i32;

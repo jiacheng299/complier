@@ -16,4 +16,12 @@ public class GetElementPtr extends Instruction{
         this.value1 = value1;
         this.index1 = index1;
     }
+    public void print(){
+        if (index2==null){
+            System.out.println(result.name+" = getelementptr i32,"+" "+"i32"+"* "+value1.name+", "+index1.valueType+" "+value1.name);
+        }
+        else{
+            System.out.println(result.name+" = getelementptr "+value1.printArrayType()+", "+value1.printArrayType()+"* "+value1.name+", "+index1.valueType+" "+index1.name+", "+index2.valueType+" "+index2.name);
+        }
+    }
 }

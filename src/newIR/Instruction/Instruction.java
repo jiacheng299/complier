@@ -6,4 +6,8 @@ public class Instruction extends Value {
     public Value result;
     public Value value1;
     public Value value2;
+
+    public void print() {
+
+    }
 }

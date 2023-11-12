@@ -7,5 +7,7 @@ public class Const extends Value {
     public Const(String num){
         this.num = num;
         this.name=num;
+        this.isConst=true;
+        this.constNum=Integer.parseInt(num);
     }
 }

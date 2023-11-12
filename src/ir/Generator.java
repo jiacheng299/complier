@@ -17,7 +17,10 @@ import java.util.Stack;
 
 public class Generator {
     private SymbolTableNode currentNode=SymbolTableNode.getCurrentNode();
-    private Function currentFunction=null;
+    private Function
+
+
+            currentFunction=null;
     private SymbolInfo returnNum=null;
     private HashMap<String,Function> functionList= Function.getFunctions();
     private ValueTable currentValueTable=new ValueTable();

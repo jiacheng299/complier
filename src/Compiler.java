@@ -11,6 +11,8 @@ import front.Parser;
 import Token.Token;
 import ir.Generator;
 import ir.Module;
+import newIR.BuildIR;
+import newIR.Module.MyModule;
 import node.RedirectSystemOut;
 
 import java.io.*;
@@ -68,6 +70,9 @@ public class Compiler {
 //            codeToMips.codegen.start();
 //            System.setOut(RedirectSystemOut.mips);
 //            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
+            MyModule module=new MyModule();
+            BuildIR buildIR=new BuildIR(module);
+            buildIR.start(parser.getEntrance());
         }
 
     }

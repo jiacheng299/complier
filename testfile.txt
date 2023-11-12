@@ -1,5 +1,11 @@
+void g(int a[]){
+printf("%d",a[0]);
+}
+void f(int a[]){
+    g(a);
+}
 int main(){
-const int a[3]={1,2,3};
-int a[a[2]]={a[0],a[1],a[2]};
+int a[3]={1,2,3};
+f(a);
 return 0;
 }

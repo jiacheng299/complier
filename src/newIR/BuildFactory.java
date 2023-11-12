@@ -1,5 +1,6 @@
 package newIR;
 
+
 import newIR.Instruction.*;
 import newIR.Module.*;
 import newIR.Module.MyModule;
@@ -7,6 +8,9 @@ import newIR.ValueSon.Const;
 import newIR.ValueSon.Global;
 import newIR.ValueSon.User;
 import newIR.ValueSon.Var;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BuildFactory {
     private static final BuildFactory buildFactory=new BuildFactory();
@@ -49,11 +53,15 @@ public class BuildFactory {
         currentBlock.addInst(storeInstrution);
     }
     public User createGetElementPtr(BasicBlock currentBlock,Value value1, Value index1, Value index2){
-        User user=new User(getId(),ValueType.i32);
+        User user=new User(getId(),ValueType.pointer);
         GetElementPtr getElementPtr=new GetElementPtr(user,value1,index1,index2);
         return user;
     }
-
+    public User createGetElementPtr(BasicBlock currentBlock,Value value1, Value index1){
+        User user=new User(getId(),ValueType.pointer);
+        GetElementPtr getElementPtr=new GetElementPtr(user,value1,index1);
+        return user;
+    }
     public Var createVar(String name, ValueType i32, boolean isConst) {
         Var var=new Var(name,i32,isConst);
         return var;
@@ -72,29 +80,45 @@ public class BuildFactory {
         return user;
     }
 
-    public User createIcmp(BasicBlock currentBlock, Value value1, Const aconst, OpCode eq) {
+    public User createIcmp(BasicBlock currentBlock, Value value1, Value aconst, OpCode eq) {
         User user=new User(getId(),ValueType.i1);
         IcmpInstruction icmpInstruction=new IcmpInstruction(user,value1,aconst,eq);
         currentBlock.addInst(icmpInstruction);
         return user;
     }
-    public CallInstruction createCallInst(BasicBlock currentBlock,Function function){
+    public User createCallInst(BasicBlock currentBlock, Function function, List<Value> params){
         if (function.returnType!=ValueType.VOID){
             User user=new User(getId(),ValueType.i32);
-            CallInstruction callInstruction=new CallInstruction(function,user);
+            CallInstruction callInstruction=new CallInstruction(function, user, (ArrayList<Value>) params);
             currentBlock.addInst(callInstruction);
-            return callInstruction;
+            return user;
         }
         else{
-            CallInstruction callInstruction=new CallInstruction(function);
+            CallInstruction callInstruction=new CallInstruction(function, (ArrayList<Value>) params);
             currentBlock.addInst(callInstruction);
-            return callInstruction;
+            return null;
         }
     }
     public User createLoadInst(BasicBlock currentBlock,Value value){
-        User user=new User(getId(),value.valueType);
+        User user=new User(getId(),ValueType.i32);
+        if (value.valueType==ValueType.pointer) user.valueType=ValueType.pointer;
         LoadInstruction loadInstruction=new LoadInstruction(user,value);
         currentBlock.addInst(loadInstruction);
         return user;
+    }
+    public void createRetInst(BasicBlock currentBlock,Value value,ValueType valueType){
+        RetInstruction retInstruction=new RetInstruction(value,valueType);
+        currentBlock.addInst(retInstruction);
+        currentBlock.hasTerminator=true;
+    }
+    public void resetId0() {
+        id=0;
+    }
+
+    public void createBranchInst(BasicBlock currentBlock, Value value, Value trueblock, Value falseblock) {
+        BranchInstruction branchInst = new BranchInstruction(value,trueblock,falseblock);
+
+        currentBlock.addInst(branchInst);
+        currentBlock.hasTerminator=true;
     }
 }
