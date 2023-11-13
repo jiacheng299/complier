@@ -1,6 +1,5 @@
 package newIR.Module;
 
-import ir.Instruction.BaseInstruction;
 import newIR.Instruction.BranchInstruction;
 import newIR.Instruction.Instruction;
 import newIR.Instruction.RetInstruction;
