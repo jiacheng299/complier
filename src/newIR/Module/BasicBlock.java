@@ -1,16 +1,17 @@
 package newIR.Module;
 
 import ir.Instruction.BaseInstruction;
+import newIR.Instruction.BranchInstruction;
 import newIR.Instruction.Instruction;
 import newIR.Instruction.RetInstruction;
 import newIR.Value;
 import newIR.ValueType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BasicBlock extends Value{
-    public String name;
-    public List<Instruction> instructions;
+    public List<Instruction> instructions=new ArrayList<>();
     public boolean hasTerminator = false;
     public BasicBlock outblock;//后继block
     public BasicBlock nextblock;//前驱block
@@ -31,12 +32,14 @@ public class BasicBlock extends Value{
         BasicBlock block=new BasicBlock();
         if (!this.hasTerminator){
             instructions.add(new RetInstruction(new Value(), ValueType.VOID));
+            hasTerminator=true;
         }
         return block;
     }
     public BasicBlock enterNextBlock(BasicBlock block){
         if (!this.hasTerminator){
-            instructions.add(new RetInstruction(new Value(), ValueType.VOID));
+            instructions.add(new BranchInstruction(block));
+            hasTerminator=true;
         }
         return block;
     }
@@ -49,6 +52,5 @@ public class BasicBlock extends Value{
         }
     }
 
-    public Value getNextblock() {
-    }
+
 }

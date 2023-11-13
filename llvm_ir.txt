@@ -1,44 +1,38 @@
 declare i32 @getint()
 declare void @putint(i32)
 declare void @putch(i32)
-declare void @putstr(i8*)
-define dso_local void @g(i32* %0)
+define dso_local i32 @f()
 {
-;<label>:%1
-    %2 = alloca i32*
-    store i32* %0, i32* * %2
-    %3 = load i32*, i32* * %2
-    %4 = getelementptr i32, i32* %3, i32 3
-    %5 = load i32, i32 * %4
-    call void @putint(i32 %5)
-    ret void
-}
-define dso_local void @f(i32* %0)
-{
-;<label>:%1
-    %2 = alloca i32*
-    store i32* %0, i32* * %2
-    %3 = load i32*, i32* * %2
-    call void @g(i32* %3)
-    ret void
+;<label>:%0
+    ret i32 999999
 }
 define dso_local i32 @main()
 {
 ;<label>:%0
-    %1 = alloca [6 x i32]
-    %2 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 0
-    store i32 1, i32 * %2
-    %3 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 1
-    store i32 2, i32 * %3
-    %4 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 2
-    store i32 3, i32 * %4
-    %5 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 3
-    store i32 9, i32 * %5
-    %6 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 4
-    store i32 2, i32 * %6
-    %7 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 5
-    store i32 3, i32 * %7
-    %8 = getelementptr [6 x i32], [6 x i32]* %1, i32 0, i32 0
-    call void @f(i32* %8)
-    ret i32 0
+    %1 = alloca i32
+    store i32 1, i32  * %1
+    %2 = alloca i32
+    store i32 1, i32  * %2
+    %3 = alloca i32
+    store i32 0, i32  * %3
+    br label %4
+;<label>:%4
+    %5 = load i32, i32 * %3
+    %6 = icmp slt i32 %5, 99999
+    br i1  %6, label %7, label %14
+;<label>:%7
+    %8 = load i32, i32 * %2
+    %9 = call i32 @f()
+    %10 = sub i32 %8, %9
+    store i32 %10, i32  * %2
+    br label %11
+;<label>:%11
+    %12 = load i32, i32 * %3
+    %13 = add i32 %12, 1
+    store i32 %13, i32  * %3
+    br label %4
+;<label>:%14
+    %15 = load i32, i32 * %2
+    call void @putint(i32 %15)
+    ret i32 1
 }

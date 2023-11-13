@@ -4,7 +4,6 @@ package newIR;
 import newIR.Instruction.*;
 import newIR.Module.*;
 import newIR.Module.MyModule;
-import newIR.ValueSon.Const;
 import newIR.ValueSon.Global;
 import newIR.ValueSon.User;
 import newIR.ValueSon.Var;
@@ -29,7 +28,7 @@ public class BuildFactory {
         return function;
     }
     public Global createGlobal(MyModule myModule, String name,ValueType valueType,boolean isConst){
-        Global global=new Global(name,valueType,isConst);
+        Global global=new Global("@"+name,valueType,isConst);
         myModule.globalList.add(global);
         return global;
     }
@@ -55,11 +54,13 @@ public class BuildFactory {
     public User createGetElementPtr(BasicBlock currentBlock,Value value1, Value index1, Value index2){
         User user=new User(getId(),ValueType.pointer);
         GetElementPtr getElementPtr=new GetElementPtr(user,value1,index1,index2);
+        currentBlock.addInst(getElementPtr);
         return user;
     }
     public User createGetElementPtr(BasicBlock currentBlock,Value value1, Value index1){
         User user=new User(getId(),ValueType.pointer);
         GetElementPtr getElementPtr=new GetElementPtr(user,value1,index1);
+        currentBlock.addInst(getElementPtr);
         return user;
     }
     public Var createVar(String name, ValueType i32, boolean isConst) {
@@ -74,9 +75,10 @@ public class BuildFactory {
         return user;
     }
 
-    public Value createBinaryInst(Value newValue1, Value newValue2, OpCode opCode) {
+    public Value createBinaryInst(BasicBlock currentBlock, Value newValue1, Value newValue2, OpCode opCode) {
         User user=new User(getId(),ValueType.i32);
         BinaryInstruction binaryInstruction=new BinaryInstruction(newValue1,newValue2,user,opCode);
+        currentBlock.addInst(binaryInstruction);
         return user;
     }
 

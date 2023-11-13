@@ -11,8 +11,8 @@ public class Value {
     protected ValueType type;
     public String onearrayNum=null;
     public String twoarrayNum=null;
-    protected boolean isConst=false;
-    protected boolean isGlobal=false;
+    public boolean isConst=false;
+    public boolean isGlobal=false;
     public List<String> arrayNum=new ArrayList<>();
     private List<Use> uses;
     public Value(){}

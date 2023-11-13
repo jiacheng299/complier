@@ -1,6 +1,8 @@
 package backend;
 
-import ir.Instruction.BaseInstruction;
+
+
+import newIR.Instruction.Instruction;
 
 import java.util.List;
 
@@ -13,7 +15,7 @@ public class MipsInstruction {
     protected String name=null;
     protected Integer num=null;
     protected Integer memsize=null;
-    protected BaseInstruction instruction;
+    protected Instruction instruction;
     protected List<String> initParams=null;
     public MipsInstruction(MipsType type){
         this.mipsType=type;
@@ -22,7 +24,7 @@ public class MipsInstruction {
         this.mipsType=type;
         this.name=name;
     }
-    public MipsInstruction(MipsType type,BaseInstruction baseInstruction){
+    public MipsInstruction(MipsType type,Instruction baseInstruction){
         this.mipsType=type;
         this.instruction=baseInstruction;
     }

@@ -1,11 +1,14 @@
-void g(int a[]){
-printf("%d",a[0]);
-}
-void f(int a[]){
-    g(a);
+int  f(){
+return 999999;
 }
 int main(){
-int a[3]={1,2,3};
-f(a);
-return 0;
+int a=1;
+int b=1;
+int i;
+for(i=0;i<99999;i=i+1){
+b=b-f();
+}
+
+printf("%d",b);
+return 1;
 }

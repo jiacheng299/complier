@@ -8,9 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Var extends Value {
-    public String name;
-
-
     public Var(String name, ValueType valueType, boolean isConst){
         this.name = name;
         this.valueType = valueType;

@@ -1,21 +1,222 @@
-declare i32 @getint()
-declare void @putint(i32)
-declare void @putch(i32)
-define void @func3(i32*){
-;<label>:1:
-    %2 = alloca i32*
-    store i32* %0, i32** %2
-    %3 = load i32*, i32** %2
-    %4 = getelementptr i32, i32* %3, i32 0
-    store i32 1, i32* %4
-    ret void
-}
-
-define i32 @main(){
-;<label>:0:
-    %1 = alloca [3 x i32]
-    %2 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 0
-    store i32 1, i32* %2
-    ret i32 0
-}
-
+.data
+.text
+.globl main
+main:
+    addu $fp ,$sp ,$zero
+    addiu $sp ,$sp ,-136
+    sw $fp ,48($sp)
+    sw $ra ,52($sp)
+    # %2 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,56
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,68($sp)
+    # store i32 1, i32* %2
+    addiu $t0 ,$zero ,1
+    lw $t1 ,68($sp)
+    sw $t0 ,0($t1)
+    # %3 = getelementptr i32, i32* %2, i32 1
+    addiu $t0 ,$zero ,1
+    lw $t1 ,68($sp)
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$t1 ,$t0
+    sw $t1 ,72($sp)
+    # store i32 2, i32* %3
+    addiu $t0 ,$zero ,2
+    lw $t1 ,72($sp)
+    sw $t0 ,0($t1)
+    # %4 = getelementptr i32, i32* %2, i32 2
+    addiu $t0 ,$zero ,2
+    lw $t1 ,68($sp)
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$t1 ,$t0
+    sw $t1 ,76($sp)
+    # store i32 3, i32* %4
+    addiu $t0 ,$zero ,3
+    lw $t1 ,76($sp)
+    sw $t0 ,0($t1)
+    # %6 = getelementptr [1 x [3 x i32]], [1 x [3 x i32]]* %5, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,3
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,80
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,92($sp)
+    # %7 = getelementptr [3 x i32], [3 x i32]* %6, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,4
+    lw $t1 ,92($sp)
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,96($sp)
+    # store i32 1, i32* %7
+    addiu $t0 ,$zero ,1
+    lw $t1 ,96($sp)
+    sw $t0 ,0($t1)
+    # %8 = getelementptr i32, i32* %7, i32 1
+    addiu $t0 ,$zero ,1
+    lw $t1 ,96($sp)
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$t1 ,$t0
+    sw $t1 ,100($sp)
+    # store i32 2, i32* %8
+    addiu $t0 ,$zero ,2
+    lw $t1 ,100($sp)
+    sw $t0 ,0($t1)
+    # %9 = getelementptr i32, i32* %7, i32 2
+    addiu $t0 ,$zero ,2
+    lw $t1 ,96($sp)
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$t1 ,$t0
+    sw $t1 ,104($sp)
+    # store i32 3, i32* %9
+    addiu $t0 ,$zero ,3
+    lw $t1 ,104($sp)
+    sw $t0 ,0($t1)
+    # %10 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 1
+    addiu $t0 ,$zero ,1
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,56
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,108($sp)
+    # %11 = load i32, i32* %10
+    # %12 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 1
+    addiu $t0 ,$zero ,1
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,56
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,112($sp)
+    # %13 = load i32, i32* %12
+    # %14 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 1
+    addiu $t0 ,$zero ,1
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,56
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,116($sp)
+    # %15 = load i32, i32* %14
+    # %16 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,56
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,120($sp)
+    # %17 = getelementptr [1 x [3 x i32]], [1 x [3 x i32]]* %5, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,3
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,80
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,124($sp)
+    # %18 = getelementptr [1 x [3 x i32]], [1 x [3 x i32]]* %5, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,3
+    mul $t0 ,$t0 ,4
+    addu $t1 ,$sp ,80
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,128($sp)
+    # %19 = getelementptr [3 x i32], [3 x i32]* %18, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,4
+    lw $t1 ,128($sp)
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,132($sp)
+    # %20 = load i32, i32* %19
+    # call void @f(i32 %11, i32 %13, i32 %15, i32* %16, [3 x i32]* %17, i32 %20)
+    lw $t0 ,108($sp)
+    lw $a0 ,0($t0)
+    lw $t0 ,112($sp)
+    lw $a1 ,0($t0)
+    lw $t0 ,116($sp)
+    lw $a2 ,0($t0)
+    lw $a3 ,120($sp)
+    lw $t0 ,124($sp)
+    sw $t0 ,0($sp)
+    lw $t0 ,132($sp)
+    lw $t0 ,0($t0)
+    sw $t0 ,4($sp)
+    jal f
+    # ret i32 0
+    addiu $v0 ,$zero ,10
+    syscall
+f:
+    addu $fp ,$sp ,$zero
+    addiu $sp ,$sp ,-92
+    sw $fp ,48($sp)
+    sw $ra ,52($sp)
+    # store i32 %0, i32* %7
+    sw $a0 ,56($sp)
+    # store i32 %1, i32* %8
+    sw $a1 ,60($sp)
+    # store i32 %2, i32* %9
+    sw $a2 ,64($sp)
+    # store i32* %3, i32** %10
+    sw $a3 ,68($sp)
+    # store [3 x i32]* %4, [3 x i32]** %11
+    lw $t0 ,92($sp)
+    sw $t0 ,72($sp)
+    # store i32 %5, i32* %12
+    lw $t0 ,96($sp)
+    sw $t0 ,76($sp)
+    # %13 = load i32, i32* %7
+    # call void @putint(i32 %13)
+    lw $a0 ,56($sp)
+    jal putint
+    # %14 = load i32, i32* %8
+    # call void @putint(i32 %14)
+    lw $a0 ,60($sp)
+    jal putint
+    # %15 = load i32, i32* %9
+    # call void @putint(i32 %15)
+    lw $a0 ,64($sp)
+    jal putint
+    # %16 = load i32*, i32** %10
+    lw $t0 ,68($sp)
+    # %17 = getelementptr i32, i32* %16, i32 0
+    addiu $t1 ,$zero ,0
+    mul $t1 ,$t1 ,4
+    addu $t0 ,$t0 ,$t1
+    sw $t0 ,80($sp)
+    # %18 = load i32, i32* %17
+    # call void @putint(i32 %18)
+    lw $t0 ,80($sp)
+    lw $a0 ,0($t0)
+    jal putint
+    # %19 = load [3 x i32]*, [3 x i32]** %11
+    lw $t0 ,72($sp)
+    # %20 = getelementptr [3 x i32], [3 x i32]* %19, i32 0
+    addiu $t1 ,$zero ,0
+    mul $t1 ,$t1 ,3
+    mul $t1 ,$t1 ,4
+    addu $t0 ,$t0 ,$t1
+    sw $t0 ,84($sp)
+    # %21 = getelementptr [3 x i32], [3 x i32]* %20, i32 0, i32 0
+    addiu $t0 ,$zero ,0
+    mul $t0 ,$t0 ,4
+    lw $t1 ,84($sp)
+    addu $t0 ,$t1 ,$t0
+    sw $t0 ,88($sp)
+    # %22 = load i32, i32* %21
+    # call void @putint(i32 %22)
+    lw $t0 ,88($sp)
+    lw $a0 ,0($t0)
+    jal putint
+    # %23 = load i32, i32* %12
+    # call void @putint(i32 %23)
+    lw $a0 ,76($sp)
+    jal putint
+    # ret void
+    lw $ra ,52($sp)
+    lw $sp ,48($sp)
+    jr $ra
+putch:
+    addiu $v0 ,$zero ,11
+    syscall
+    jr $ra
+putint:
+    addiu $v0 ,$zero ,1
+    syscall
+    jr $ra
+getint:
+    addiu $v0 ,$zero ,5
+    syscall
+    jr $ra

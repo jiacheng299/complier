@@ -20,7 +20,7 @@ import java.util.Stack;
 public class BuildIR {
     public MyModule module;
     public ValueTable currentValueTable;
-    public BasicBlock currentBlock;
+    public BasicBlock currentBlock=new BasicBlock();
     private HashMap<String,Function> functionList= new HashMap<>();
     public BuildFactory buildFactory=BuildFactory.getBuildFactory();
     private Function currentFunction=null;
@@ -32,7 +32,7 @@ public class BuildIR {
         else {
             Value newValue1 = zext(value1);
             Value newValue2 = zext(value2);
-            Value res=buildFactory.createBinaryInst(newValue1,newValue2,opCode);
+            Value res=buildFactory.createBinaryInst(currentBlock,newValue1,newValue2,opCode);
             return res;
         }
     }
@@ -69,7 +69,9 @@ public class BuildIR {
         //CompUnit → {Decl} {FuncDef} MainFuncDef
         Function getint=buildFactory.createFunction(module,"getint",ValueType.i32,false);
         Function putint=buildFactory.createFunction(module,"putint",ValueType.VOID,false);
+        putint.params.add(new Value("%0",ValueType.i32));
         Function putch=buildFactory.createFunction(module,"putch",ValueType.VOID,false);
+        putch.params.add(new Value("%0",ValueType.i32));
         functionList.put("getint",getint);
         functionList.put("putint",putint);
         functionList.put("putch",putch);
@@ -91,7 +93,7 @@ public class BuildIR {
         else function=buildFactory.createFunction(module,name,ValueType.VOID,true);
         currentFunction=function;
         functionList.put(name,function);
-        currentBlock=new BasicBlock();
+        currentBlock=currentBlock.enterNextBlock();
         function.appendBlock(currentBlock);
         currentValueTable=currentValueTable.enterNextTbale();
         if (f.getFuncFParamsNode()!=null)   visitFuncFParams(f.getFuncFParamsNode(),function);
@@ -112,6 +114,7 @@ public class BuildIR {
         int i=0;
         for (Value param:function.params){
             User alloc=buildFactory.createAllocateInst(currentBlock,param.valueType);
+            if (param.onearrayNum!=null) alloc.onearrayNum=param.onearrayNum;
             if (param.twoarrayNum!=null) alloc.twoarrayNum= param.twoarrayNum;
             buildFactory.createStoreInst(currentBlock,param,alloc);
             currentValueTable.addValue(funcFParamsNode.getFuncFParamsNodes().get(i).getIdent().getValue(), alloc);
@@ -152,6 +155,7 @@ public class BuildIR {
     private void visitConstDecl(ConstDeclNode constDeclNode) {
         //ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
         ValueType type=visitBtype(constDeclNode.getbTypeNode());
+        visitConstDef(constDeclNode.getConstDefNode(),type);
         for (ConstDefNode f : constDeclNode.getConstDefNodes()){
             visitConstDef(f,type);
         }
@@ -165,20 +169,20 @@ public class BuildIR {
         if (f.getConstExpNodes().size() == 0){
             global=buildFactory.createGlobal(module,name,ValueType.i32,true);
             Const constnum=visitConstExp(f.getConstInitValNode().getConstExpNode());
-            global.num=Integer.parseInt(constnum.num);
+            global.constNum=Integer.parseInt(constnum.num);
         }//一位数组
         else if (f.getConstExpNodes().size() == 1) {
             global=buildFactory.createGlobal(module,name,ValueType.onearray,true);
             List<Value> initValues=visitConstInitalVal(f.getConstInitValNode());
             global.onearrayNum=Integer.parseInt(visitConstExp(f.getConstExpNodes().get(0)).num);
-            global.arrayNums=initValues;
+            global.arrayNum=initValues;
         }//二维数组
         else{
             global=buildFactory.createGlobal(module,name,ValueType.twoarray,true);
             global.onearrayNum=Integer.parseInt(visitConstExp(f.getConstExpNodes().get(0)).num);
             global.twoarrayNum=Integer.parseInt(visitConstExp(f.getConstExpNodes().get(1)).num);
             List<Value> initValues=visitConstInitalVal(f.getConstInitValNode());
-            global.arrayNums=initValues;
+            global.arrayNum=initValues;
         }
         currentValueTable.addValue(name,global);
     }
@@ -201,6 +205,7 @@ public class BuildIR {
     }
     private void visitVarDecl(VarDeclNode varDeclNode) {
         ValueType type = visitBtype(varDeclNode.getbTypeNode());
+        visitVarDef(varDeclNode.getVarDefNode(),type);
         for (VarDefNode varDef : varDeclNode.getVarDefNodes()){
             visitVarDef(varDef,type);
         }
@@ -212,29 +217,29 @@ public class BuildIR {
         Global global;
         //普通变量
         if (varDef.getConstExpNodes().size() == 0){
-            global=buildFactory.createGlobal(module,name,ValueType.i32,true);
+            global=buildFactory.createGlobal(module,name,ValueType.i32,false);
             if (varDef.getInitValNode()!=null){
                 Const constnum=(Const)visitExp(varDef.getInitValNode().getExpNode());
-                global.num=Integer.parseInt(constnum.num);
+                global.constNum=Integer.parseInt(constnum.num);
             }
-            else global.num=0;
+            else global.constNum=0;
 
         }//一位数组
         else if (varDef.getConstExpNodes().size() == 1) {
-            global=buildFactory.createGlobal(module,name,ValueType.onearray,true);
+            global=buildFactory.createGlobal(module,name,ValueType.onearray,false);
             global.onearrayNum=Integer.parseInt(visitConstExp(varDef.getConstExpNodes().get(0)).num);
             if (varDef.getInitValNode()!=null){
                 List<Value> initValues=visitInitVal(varDef.getInitValNode());
-                global.arrayNums=initValues;
+                global.arrayNum=initValues;
             }
         }//二维数组
         else{
-            global=buildFactory.createGlobal(module,name,ValueType.twoarray,true);
+            global=buildFactory.createGlobal(module,name,ValueType.twoarray,false);
             global.onearrayNum=Integer.parseInt(visitConstExp(varDef.getConstExpNodes().get(0)).num);
             global.twoarrayNum=Integer.parseInt(visitConstExp(varDef.getConstExpNodes().get(1)).num);
             if (varDef.getInitValNode() != null) {
                 List<Value> initValues = visitInitVal(varDef.getInitValNode());
-                global.arrayNums = initValues;
+                global.arrayNum = initValues;
             }
         }
         currentValueTable.addValue(name,global);
@@ -339,11 +344,12 @@ public class BuildIR {
                 Value index1=visitExp(getlValNode.getExpNodes().get(0));
                 if (value.isConst) {
                     if (index1.isConst){
-                        return new Const(value.arrayNum.get(index1.constNum).toString());
+                        return new Const(value.arrayNum.get(index1.constNum).constNum.toString());
                     }
                 }
                 User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),index1);
                 User user=buildFactory.createLoadInst(currentBlock,tempUser);
+                user.valueType=ValueType.i32;
                 return user;
             }
             //否则就是取一维数组的地址
@@ -356,13 +362,14 @@ public class BuildIR {
                 Value index2=visitExp(getlValNode.getExpNodes().get(1));
                 if (value.isConst){
                     if (index1.isConst&&index2.isConst){
-                        return new Const(value.arrayNum.get(index1.constNum* value.twoarrayNum+index2.constNum).toString());
+                        return new Const(value.arrayNum.get(index1.constNum* value.twoarrayNum+index2.constNum).constNum.toString());
                     }
                 }
                 Value temp=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
                 Value sum=addBinaryInstruction(temp,index2,OpCode.add);
                 User tempUser=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
                 User user=buildFactory.createLoadInst(currentBlock,tempUser);
+                user.valueType=ValueType.i32;
                 return user;
             }//取二维数组的一维地址
             else if (getlValNode.getExpNodes().size()==1){
@@ -387,14 +394,15 @@ public class BuildIR {
                     User tempuser=buildFactory.createLoadInst(currentBlock,value);
                     Value index1=visitExp(getlValNode.getExpNodes().get(0));
                     Value sum=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
-                    User user=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                    User user=buildFactory.createGetElementPtr(currentBlock,tempuser,sum);
                     return user;
                 }
                 else{
                     User tempuser=buildFactory.createLoadInst(currentBlock,value);
                     Value index1=visitExp(getlValNode.getExpNodes().get(0));
-                    User addr=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),index1);
+                    User addr=buildFactory.createGetElementPtr(currentBlock,tempuser,index1);
                     User user =buildFactory.createLoadInst(currentBlock,addr);
+                    user.valueType=ValueType.i32;
                     return user;
                 }
 
@@ -405,8 +413,9 @@ public class BuildIR {
                 Value index2=visitExp(getlValNode.getExpNodes().get(1));
                 Value temp=addBinaryInstruction(index1,new Const(value.twoarrayNum.toString()),OpCode.mul);
                 Value sum=addBinaryInstruction(temp,index2,OpCode.add);
-                User addr=buildFactory.createGetElementPtr(currentBlock,value,new Const("0"),sum);
+                User addr=buildFactory.createGetElementPtr(currentBlock,tempuser,sum);
                 User user=buildFactory.createLoadInst(currentBlock,addr);
+                user.valueType=ValueType.i32;
                 return user;
             }
         }
@@ -485,9 +494,8 @@ public class BuildIR {
         Function function=buildFactory.createFunction(module,"main",ValueType.i32,true);
         currentFunction=function;
         buildFactory.resetId0();
-        BasicBlock block=new BasicBlock();
-        block.setName(buildFactory.getId());
         currentBlock=currentBlock.enterNextBlock();
+        currentBlock.setName(buildFactory.getId());
         function.appendBlock(currentBlock);
         currentValueTable=currentValueTable.enterNextTbale();
         for (BlockItemNode blockItemNode :mainFuncDefNode.getBlockNode().getBlockItemNodes()){
@@ -512,6 +520,7 @@ public class BuildIR {
     private void visitConstDecl(ValueTable currentValueTable, ConstDeclNode constDeclNode) {
         //ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
         ValueType type = visitBtype(constDeclNode.getbTypeNode());
+        visitConstDef(currentValueTable,constDeclNode.getConstDefNode(),type);
         for (ConstDefNode constDef : constDeclNode.getConstDefNodes()){
             visitConstDef(currentValueTable,constDef,type);
         }
@@ -548,6 +557,7 @@ public class BuildIR {
     private void visitVarDecl(ValueTable currentValueTable, VarDeclNode varDeclNode) {
        // VarDecl → BType VarDef { ',' VarDef } ';'
         ValueType type = visitBtype(varDeclNode.getbTypeNode());
+        visitVarDef(currentValueTable,varDeclNode.getVarDefNode(),type);
         for (VarDefNode varDef : varDeclNode.getVarDefNodes()){
             visitVarDef(currentValueTable,varDef,type);
         }
@@ -649,7 +659,7 @@ public class BuildIR {
             }
         }//| Block
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Block){
-            currentValueTable.enterNextTbale();
+            currentValueTable=currentValueTable.enterNextTbale();
             for (BlockItemNode blockItemNode :stmtNode.getBlockNode().getBlockItemNodes()){
                 visitBlockItem(blockItemNode);
             }
@@ -671,12 +681,13 @@ public class BuildIR {
             //如果有else
             if (stmtNode.getElsetk()!=null){
                 elseblock.setName(buildFactory.getId());
+                buildFactory.createBranchInst(currentBlock,outblock);
                 currentBlock=currentBlock.enterNextBlock(elseblock);
                 visitStmt(stmtNode.getStmtNodes().get(1));
                 currentFunction.appendBlock(elseblock);
             }
             outblock.setName(buildFactory.getId());
-            currentBlock.enterNextBlock(outblock);
+            currentBlock=currentBlock.enterNextBlock(outblock);
             currentFunction.appendBlock(outblock);
         }//| 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
         else if (stmtNode.getStmtType()== StmtNode.StmtType.For) {
@@ -733,7 +744,7 @@ public class BuildIR {
             buildFactory.createBranchInst(currentBlock,loop.peek().outblock);
         }//| 'continue' ';'
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Continue) {
-            buildFactory.createBranchInst(currentBlock,loop.peek().getNextblock());
+            buildFactory.createBranchInst(currentBlock,loop.peek().nextblock);
         }//| 'return' [Exp] ';'
         else if (stmtNode.getStmtType()== StmtNode.StmtType.Return){
             if (stmtNode.getExpNode()!=null) {

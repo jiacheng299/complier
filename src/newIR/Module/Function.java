@@ -4,6 +4,8 @@ import newIR.Value;
 import newIR.ValueType;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class Function {
@@ -22,8 +24,19 @@ public class Function {
     public void appendBlock(BasicBlock currentBlock) {
         basicBlocks.add(currentBlock);
     }
+    public void sortBasicBlocks() {
+        Collections.sort(basicBlocks, new Comparator<BasicBlock>() {
+            @Override
+            public int compare(BasicBlock bb1, BasicBlock bb2) {
+                // 根据自定义的比较规则进行比较
+                return Integer.parseInt(bb1.name.replaceAll("[^0-9]", ""))-
+                        Integer.parseInt(bb2.name.replaceAll("[^0-9]", ""));
 
+            }
+        });
+    }
     public void print() {
+        sortBasicBlocks();
         if (this.isDefined==false){
             if (returnType== ValueType.i32)
                 System.out.print("declare "+returnType.toString().toLowerCase()+" @"+name+"(");

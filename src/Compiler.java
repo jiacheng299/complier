@@ -9,8 +9,6 @@ import front.ErrorHandle;
 import front.Lexer;
 import front.Parser;
 import Token.Token;
-import ir.Generator;
-import ir.Module;
 import newIR.BuildIR;
 import newIR.Module.MyModule;
 import node.RedirectSystemOut;
@@ -66,13 +64,15 @@ public class Compiler {
 //            Generator generator=new Generator();
 //            generator.start(parser.getEntrance());
 //            Module.getModule().print();
-//            codeToMips.codegen=new codeToMips(Module.getModule());
-//            codeToMips.codegen.start();
-//            System.setOut(RedirectSystemOut.mips);
-//            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
+
             MyModule module=new MyModule();
             BuildIR buildIR=new BuildIR(module);
             buildIR.start(parser.getEntrance());
+            module.print();
+            codeToMips.codegen=new codeToMips(module);
+            codeToMips.codegen.start();
+            System.setOut(RedirectSystemOut.mips);
+            for (MipsInstruction mipsInstruction: codeToMips.codegen.mipsInstructions) mipsInstruction.print();
         }
 
     }

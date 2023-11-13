@@ -1,15 +1,15 @@
 package backend;
 
-import ir.Basic.BasicBlock;
-import ir.Basic.Function;
-import ir.Basic.GlobalVar;
-import ir.Instruction.*;
-import ir.Type.ValueType;
+
+import newIR.Instruction.*;
+import newIR.Module.BasicBlock;
+import newIR.Module.Function;
+import newIR.ValueSon.Global;
+import newIR.ValueType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 //用来统计每个变量的权重
 public class Counter {
@@ -24,11 +24,11 @@ public class Counter {
         this.NO=new HashSet<>();
     }
     public ArrayList<String> analyse(){
-        for (BasicBlock basicBlock: function.getBasicBlocks()){
+        for (BasicBlock basicBlock: function.basicBlocks){
             //循环块要加权重,考虑内层可能还有循环
             if (basicBlock.enterLoop)   weight*=loop_weight;
             if (basicBlock.exitLoop)    weight/=loop_weight;
-            for (BaseInstruction instruction:basicBlock.getInstructions()){
+            for (Instruction instruction:basicBlock.instructions){
                 handleInst(instruction);
             }
         }
@@ -38,19 +38,19 @@ public class Counter {
         return sortedRef;
     }
 
-    private void handleInst(BaseInstruction instruction) {
+    private void handleInst(Instruction instruction) {
         if (instruction instanceof AllocateInstruction){
-            if (instruction.value1.getType()!= ValueType.i32){
-                NO.add(instruction.value1.getName());
+            if (instruction.result.valueType!= ValueType.i32){
+                NO.add(instruction.result.name);
             }
         }
         else if(instruction instanceof GetElementPtr){
-            NO.add(instruction.result.getName());
+            NO.add(instruction.result.name);
         }
         //只有对内存有操作的指令才计数
         else if (instruction instanceof LoadInstruction){
-            String varName=instruction.value1.getName();
-            if (instruction.value1 instanceof GlobalVar) return;
+            String varName=instruction.value1.name;
+            if (instruction.value1 instanceof Global) return;
             if (NO.contains(varName)) return;
             if (var2weight.containsKey(varName)){
                 var2weight.put(varName,var2weight.get(varName)+weight);
@@ -60,8 +60,8 @@ public class Counter {
             }
         }
         else if (instruction instanceof StoreInstruction){
-            String varName=instruction.value2.getName();
-            if (instruction.value2 instanceof GlobalVar) return;
+            String varName=instruction.value2.name;
+            if (instruction.value2 instanceof Global) return;
             if (NO.contains(varName)) return;
             if (var2weight.containsKey(varName)){
                 var2weight.put(varName,var2weight.get(varName)+weight);

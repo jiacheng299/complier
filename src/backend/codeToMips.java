@@ -1,31 +1,35 @@
 package backend;
 
-import ir.Basic.*;
-import ir.Instruction.*;
-import ir.Module;
-import ir.Type.ValueType;
-import ir.Value;
 
 import java.util.*;
 import config.*;
+import newIR.Instruction.*;
+import newIR.Module.BasicBlock;
+import newIR.Module.Function;
+import newIR.Module.MyModule;
+import newIR.Value;
+import newIR.ValueSon.Const;
+import newIR.ValueSon.Global;
+import newIR.ValueType;
+
 public class codeToMips {
     public static codeToMips codegen;
-    protected Module myModule;
+    protected MyModule myModule;
     public Integer maxParamSize;
     public Integer tempRegisterIndex=1;
     public BasicBlock curBasicblock=null;
     public Function curFunction=null;
     public Integer basicIndex=0;
     protected MemManage myMemManage=new MemManage();
-    public codeToMips(Module myModule){
+    public codeToMips(MyModule myModule){
         this.myModule=myModule;
         maxParamSize=findMaxParamSize();
     }
     private Integer findMaxParamSize() {
         int maxSize=0;
         //这里必须这么做，否则在call指令处无法确定函数可能的参数，内存分配可能出现问题
-        for (Function function:myModule.getFunctions()){
-            maxSize=Math.max(maxSize,function.getParameters().size());
+        for (Function function:myModule.functionList){
+            maxSize=Math.max(maxSize,function.params.size());
         }
         if (maxSize>4) return maxSize-4;
         else return 0;
@@ -41,13 +45,13 @@ public class codeToMips {
     //
     private void handleData() {
         mipsInstructions.add(new MipsInstruction(MipsType.data));
-        for (GlobalVar global:myModule.getGlobalVars()) {
+        for (Global global:myModule.globalList) {
             handleGlobal(global);
         }
         mipsInstructions.add(new MipsInstruction(MipsType.text));
         //mipsInstructions.add(new MipsInstruction(MipsType.global));
-        Collections.reverse(myModule.getFunctions());
-        List<Function> functions=myModule.getFunctions();
+        Collections.reverse(myModule.functionList);
+        List<Function> functions=myModule.functionList;
         for (Function function:functions){
             curFunction=function;
             if (function.isDefined) handleFunc1(function);
@@ -56,7 +60,7 @@ public class codeToMips {
     }
     //处理declare函数
     private void handleFunc1(Function function){
-        mipsInstructions.add(new MipsInstruction(MipsType.func, function.getName()));
+        mipsInstructions.add(new MipsInstruction(MipsType.func, function.name));
         //如果开启了优化
         if (config.optimization){
             Counter counter=new Counter(curFunction);
@@ -77,14 +81,14 @@ public class codeToMips {
         //保存栈顶和$ra
         saveStackTop(memsize);
         //处理函数参数
-        loadParams(function.getParameters(),memsize);
+        loadParams(function.params,memsize);
         //处理函数中的语句块
         boolean isFirst=true;
-        for (basicIndex=0;basicIndex<curFunction.getBasicBlocks().size();basicIndex++){
-            BasicBlock block=curFunction.getBasicBlocks().get(basicIndex);
+        for (basicIndex=0;basicIndex<curFunction.basicBlocks.size();basicIndex++){
+            BasicBlock block=curFunction.basicBlocks.get(basicIndex);
             curBasicblock=block;
             if (!isFirst){
-                mipsInstructions.add(new MipsInstruction(MipsType.func, curFunction.getName()+"_label_"+block.getName().replace("%","_")));
+                mipsInstructions.add(new MipsInstruction(MipsType.func, curFunction.name+"_label_"+block.name.replace("%","_")));
             }
             handleBlock(block);
             isFirst=false;
@@ -94,7 +98,7 @@ public class codeToMips {
 
 
 
-    private void loadParams(List<MyParameter> parameters,Integer memsize) {
+    private void loadParams(List<Value> parameters, Integer memsize) {
         int size=parameters.size();
         for (int i=0;i<size&&i<4;i++){
             myMemManage.tempVirtualRegList[4+i]=new VirtualRegister("%"+i);
@@ -105,49 +109,49 @@ public class codeToMips {
     }
 
     private void handleBlock(BasicBlock block) {
-        for (BaseInstruction instruction:block.getInstructions()){
+        for (Instruction instruction:block.instructions){
             handleInstruction(instruction);
         }
     }
 
 
 
-    private void handleGetElementPtr(BaseInstruction instruction) {
+    private void handleGetElementPtr(Instruction instruction) {
         GetElementPtr getElementPtr=(GetElementPtr) instruction;
         //处理类似%2 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 1的语句
-        if (getElementPtr.bound2!=null){
-            RealRegister offset=lookup(getElementPtr.bound2);
+        if (getElementPtr.index2!=null){
+            RealRegister offset=lookup(getElementPtr.index2);
             mipsInstructions.add(new MipsInstruction(MipsType.mul, offset.name,offset.name,"4"));
-            MyStack stack=myMemManage.lookupStack(instruction.value1.getName());
+            MyStack stack=myMemManage.lookupStack(instruction.value1.name);
             RealRegister array=myMemManage.getTempReg("temp"+tempRegisterIndex++);
             //取到数组的起始地址
             if(stack!=null){
                 mipsInstructions.add(new MipsInstruction(MipsType.addu, array.name,"$sp",stack.getIndex()));
             }//如果栈里没有，说明在全局变量里
             else{
-                mipsInstructions.add(new MipsInstruction(MipsType.la, array.name,instruction.value1.getName().replace("@","")));
+                mipsInstructions.add(new MipsInstruction(MipsType.la, array.name,instruction.value1.name.replace("@","")));
             }
             mipsInstructions.add(new MipsInstruction(MipsType.add,offset.name,array.name, offset.name));
-            MyStack cunStack=myMemManage.getStackReg(getElementPtr.result.getName());
+            MyStack cunStack=myMemManage.getStackReg(getElementPtr.result.name);
             cunStack.isArray=true;
             mipsInstructions.add(new MipsInstruction(MipsType.sw,offset.name,"$sp",cunStack.getIndex()));
             myMemManage.freeTempReg(offset);
             myMemManage.freeTempReg(array);
         }//处理类似%3 = getelementptr i32, i32* %2, i32 1的语句
         else{
-            RealRegister offset=lookup(getElementPtr.bound1);
-            MyStack stack=myMemManage.lookupStack(getElementPtr.value1.getName());
+            RealRegister offset=lookup(getElementPtr.index1);
+            MyStack stack=myMemManage.lookupStack(getElementPtr.value1.name);
             RealRegister temp;
             if (stack!=null){
                 temp=myMemManage.getTempReg("temp"+tempRegisterIndex++);
                 mipsInstructions.add(new MipsInstruction(MipsType.lw, temp.name,"$sp", stack.getIndex()));
             }
             else{
-                temp=myMemManage.lookupTemp(getElementPtr.value1.getName());
+                temp=myMemManage.lookupTemp(getElementPtr.value1.name);
             }
             mipsInstructions.add(new MipsInstruction(MipsType.mul, offset.name,offset.name,"4"));
             mipsInstructions.add(new MipsInstruction(MipsType.add, temp.name,temp.name,offset.name));
-            MyStack result=myMemManage.getStackReg(getElementPtr.result.getName());
+            MyStack result=myMemManage.getStackReg(getElementPtr.result.name);
             result.isArray=true;
             mipsInstructions.add(new MipsInstruction(MipsType.sw,temp.name,"$sp",result.getIndex()));
             myMemManage.freeTempReg(offset);
@@ -155,25 +159,25 @@ public class codeToMips {
         }
     }
 
-    private void handleBranchInstruction(BaseInstruction instruction) {
+    private void handleBranchInstruction(Instruction instruction) {
         BranchInstruction branchInstruction=(BranchInstruction) instruction;
         if (branchInstruction.cond!=null){
-            RealRegister reg0=myMemManage.lookupTemp(branchInstruction.cond.getName());
-            mipsInstructions.add(new MipsInstruction(MipsType.beq,reg0.name,"$zero",curFunction.getName()+"_label_"+branchInstruction.value2.getName().replace("%","_")));
-            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value1.getName().replace("%","_")));
+            RealRegister reg0=myMemManage.lookupTemp(branchInstruction.cond.name);
+            mipsInstructions.add(new MipsInstruction(MipsType.beq,reg0.name,"$zero",curFunction.name+"_label_"+branchInstruction.value2.name.replace("%","_")));
+            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.name+"_label_"+branchInstruction.value1.name.replace("%","_")));
             myMemManage.freeTempReg(reg0);
         }
         else{
-            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value1.getName().replace("%","_")));
+            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.name+"_label_"+branchInstruction.value1.name.replace("%","_")));
         }
     }
 
-    private void handleIcmpInstruction(BaseInstruction instruction) {
+    private void handleIcmpInstruction(Instruction instruction) {
         RealRegister reg1=lookup(instruction.value1);
         RealRegister reg2=lookup(instruction.value2);
         IcmpInstruction icmpInstruction=(IcmpInstruction) instruction;
-        RealRegister temp=myMemManage.getTempReg(instruction.result.getName());
-        if (icmpInstruction.op==OpCode.ne){
+        RealRegister temp=myMemManage.getTempReg(instruction.result.name);
+        if (icmpInstruction.op== OpCode.ne){
             mipsInstructions.add(new MipsInstruction(MipsType.sne, temp.name,reg1.name,reg2.name));
         }else if (icmpInstruction.op==OpCode.eq){
             mipsInstructions.add(new MipsInstruction(MipsType.seq, temp.name,reg1.name,reg2.name));
@@ -190,24 +194,24 @@ public class codeToMips {
         myMemManage.freeTempReg(reg2);
     }
 
-    private void handleZextInstruction(BaseInstruction instruction) {
-        RealRegister temp=myMemManage.lookupTemp(instruction.value1.getName());
-        myMemManage.tempVirtualRegList[temp.getNum()]=new VirtualRegister(instruction.result.getName());
+    private void handleZextInstruction(Instruction instruction) {
+        RealRegister temp=myMemManage.lookupTemp(instruction.value1.name);
+        myMemManage.tempVirtualRegList[temp.getNum()]=new VirtualRegister(instruction.result.name);
 
     }
 
-    private void handleCallInstruction(BaseInstruction instruction) {
+    private void handleCallInstruction(Instruction instruction) {
         CallInstruction callInstruction=(CallInstruction) instruction;
         Function function=callInstruction.function;
         //如果调用的函数不用传参
         handleParams(callInstruction.funcRParams);
         //参数之前load过，之后如果不使用的话不会free，得在这里free了
         for (int i=0;i<callInstruction.funcRParams.size();i++){
-            RealRegister res=myMemManage.lookupTemp(callInstruction.funcRParams.get(i).getName());
+            RealRegister res=myMemManage.lookupTemp(callInstruction.funcRParams.get(i).name);
             if (res!=null) myMemManage.freeTempReg(res);
         }
         if (config.optimization){
-            if (callInstruction.function.getName().equals("putint")||callInstruction.function.getName().equals("putch")||callInstruction.function.getName().equals("getint")){
+            if (callInstruction.function.name.equals("putint")||callInstruction.function.name.equals("putch")||callInstruction.function.name.equals("getint")){
                 functionIO(callInstruction);
                 return ;
             }
@@ -223,7 +227,7 @@ public class codeToMips {
             }
         }
         //跳转到函数
-        mipsInstructions.add(new MipsInstruction(MipsType.jal,function.getName()));
+        mipsInstructions.add(new MipsInstruction(MipsType.jal,function.name));
         //恢复现场
         for (Record record:myMemManage.records){
             mipsInstructions.add(new MipsInstruction(MipsType.lw,myMemManage.tempRegList.get(record.first).name,"$sp",record.second.getIndex()));
@@ -233,10 +237,10 @@ public class codeToMips {
         myMemManage.records.clear();
         //如果有返回值，把这个返回值存到栈里
         if (callInstruction.result!=null){
-            RealRegister tempReg = myMemManage.getTempReg(callInstruction.result.getName());
+            RealRegister tempReg = myMemManage.getTempReg(callInstruction.result.name);
             mipsInstructions.add(new MipsInstruction(MipsType.addiu, tempReg.name, "$v0", "0"));
             //把东西存到栈里
-            MyStack stack = myMemManage.getStackReg(callInstruction.result.getName());
+            MyStack stack = myMemManage.getStackReg(callInstruction.result.name);
             mipsInstructions.add(new MipsInstruction(MipsType.sw, tempReg.name, "$sp", stack.getIndex()));
             //释放寄存器
             myMemManage.freeTempReg(tempReg);
@@ -244,11 +248,11 @@ public class codeToMips {
     }
 
     private void functionIO(CallInstruction callInstruction) {
-        if (callInstruction.function.getName().equals("putint")){
+        if (callInstruction.function.name.equals("putint")){
             mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","1"));
             mipsInstructions.add(new MipsInstruction(MipsType.syscall));
         }
-        else if (callInstruction.function.getName().equals("putch")){
+        else if (callInstruction.function.name.equals("putch")){
             mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","11"));
             mipsInstructions.add(new MipsInstruction(MipsType.syscall));
         }
@@ -257,7 +261,7 @@ public class codeToMips {
             mipsInstructions.add(new MipsInstruction(MipsType.syscall));
             RealRegister temp=myMemManage.getTempReg("temp"+tempRegisterIndex++);
             mipsInstructions.add(new MipsInstruction(MipsType.addiu, temp.name,"$v0","0"));
-            MyStack cun=myMemManage.getStackReg(callInstruction.result.getName());
+            MyStack cun=myMemManage.getStackReg(callInstruction.result.name);
             mipsInstructions.add(new MipsInstruction(MipsType.sw, temp.name,"$sp", cun.getIndex()));
             myMemManage.freeTempReg(temp);
         }
@@ -268,8 +272,8 @@ public class codeToMips {
             Value param=funcRParams.get(i);
             //如果i<4，那就存在a0-a3中
             if (i<4){
-                if (!param.getName().contains("%")){
-                    mipsInstructions.add(new MipsInstruction(MipsType.li,"$a"+i,param.getName()));
+                if (param instanceof Const||!param.name.contains("%")){
+                    mipsInstructions.add(new MipsInstruction(MipsType.li,"$a"+i,param.name));
                 }
                 else{
                     RealRegister realRegister=lookup(param);
@@ -278,10 +282,10 @@ public class codeToMips {
                 }
             }
             else{
-                if (!param.getName().contains("%")){
+                if (!param.name.contains("%")){
                     MyStack stack=myMemManage.lookupStack("param"+i);
                     RealRegister realRegister=myMemManage.getTempReg("temp"+tempRegisterIndex++);
-                    mipsInstructions.add(new MipsInstruction(MipsType.li, realRegister.name,param.getName()));
+                    mipsInstructions.add(new MipsInstruction(MipsType.li, realRegister.name,param.name));
                     mipsInstructions.add(new MipsInstruction(MipsType.sw, realRegister.name,"$sp", stack.getIndex()));
                     myMemManage.freeTempReg(realRegister);
                 }
@@ -295,19 +299,18 @@ public class codeToMips {
         }
     }
 
-    private void handleLoadInstruction(BaseInstruction instruction) {
-
-        RealRegister resultReg = myMemManage.getTempReg(instruction.result.getName());
+    private void handleLoadInstruction(Instruction instruction) {
         //这个要加载的东西可能是函数的参数
-        RealRegister paramReg=myMemManage.lookupTemp(instruction.value1.getName());
+        RealRegister paramReg=myMemManage.lookupTemp(instruction.value1.name);
         if (paramReg!=null){
-            myMemManage.virtual2Reg.put(instruction.value1.getName(),paramReg);
+            myMemManage.virtual2Reg.put(instruction.value1.name,paramReg);
             return;
         }
-        MyStack stackReg = myMemManage.lookupStack(instruction.value1.getName());
+        RealRegister resultReg = myMemManage.getTempReg(instruction.result.name);
+        MyStack stackReg = myMemManage.lookupStack(instruction.value1.name);
         if (stackReg != null){
             if (stackReg.isArray){
-                if (instruction.result.getType()==ValueType.i32){
+                if (instruction.result.valueType== ValueType.i32){
                     RealRegister tempRegister=myMemManage.getTempReg("temp"+tempRegisterIndex++);
                     mipsInstructions.add(new MipsInstruction(MipsType.lw, tempRegister.name,"$sp",stackReg.getIndex()));
                     mipsInstructions.add(new MipsInstruction(MipsType.lw, resultReg.name,tempRegister.name,"0"));
@@ -321,13 +324,13 @@ public class codeToMips {
         }
         //找不到就去全局变量找
         else{
-            mipsInstructions.add(new MipsInstruction(MipsType.lw, resultReg.name,instruction.value1.getName().replace("@","")));
+            mipsInstructions.add(new MipsInstruction(MipsType.lw, resultReg.name,instruction.value1.name.replace("@","")));
         }
     }
 
-    private void handleStoreInstruction(BaseInstruction instruction) {
+    private void handleStoreInstruction(Instruction instruction) {
         RealRegister tempReg=lookup(instruction.value1);
-        MyStack stack=myMemManage.lookupStack(instruction.value2.getName());
+        MyStack stack=myMemManage.lookupStack(instruction.value2.name);
         if (stack!=null){
             //如果这个地方存的是数组的地址
             if (stack.isArray){
@@ -340,18 +343,18 @@ public class codeToMips {
         }
         //可能value2是全局变量
         else{
-            mipsInstructions.add(new MipsInstruction(MipsType.sw, tempReg.name,instruction.value2.getName().replace("@","")));
+            mipsInstructions.add(new MipsInstruction(MipsType.sw, tempReg.name,instruction.value2.name.replace("@","")));
         }
         myMemManage.freeTempReg(tempReg);
     }
 
-    private void handleRetInstruction(BaseInstruction instruction) {
-        if (curFunction.getName()=="main"){
+    private void handleRetInstruction(Instruction instruction) {
+        if (curFunction.name.equals("main")){
             mipsInstructions.add(new MipsInstruction(MipsType.addiu, "$v0", "$zero", "10"));
             mipsInstructions.add(new MipsInstruction(MipsType.syscall, ""));
         }
         else{
-            ValueType type=((RetInstruction)instruction).type;
+            ValueType type= instruction.valueType;
             //有返回值
             if (type!=ValueType.VOID){
                 RealRegister tempRegister=lookup(instruction.result);
@@ -370,15 +373,15 @@ public class codeToMips {
         mipsInstructions.add(new MipsInstruction(MipsType.lw,"$sp","$sp",stack.getIndex()));
     }
 
-    private void handleBinaryInstruction(BaseInstruction instruction) {
+    private void handleBinaryInstruction(Instruction instruction) {
         RealRegister reg1=lookup(instruction.value1);
         RealRegister reg2=lookup(instruction.value2);
-        RealRegister reg0=myMemManage.getTempReg(instruction.result.getName());
+        RealRegister reg0=myMemManage.getTempReg(instruction.result.name);
         if (((BinaryInstruction) instruction).opCode==OpCode.add){
             mipsInstructions.add(new MipsInstruction(MipsType.addu,reg0.name,reg1.name,reg2.name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.sub){
-            mipsInstructions.add(new MipsInstruction(MipsType.sub,reg0.name,reg1.name,reg2.name));
+            mipsInstructions.add(new MipsInstruction(MipsType.subu,reg0.name,reg1.name,reg2.name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.mul){
             mipsInstructions.add(new MipsInstruction(MipsType.mul,reg0.name,reg1.name,reg2.name));
@@ -391,22 +394,22 @@ public class codeToMips {
             mipsInstructions.add(new MipsInstruction(MipsType.div,reg1.name,reg2.name));
             mipsInstructions.add(new MipsInstruction(MipsType.mfhi,reg0.name));
         }
-        MyStack stack=myMemManage.getStackReg(instruction.result.getName());
+        MyStack stack=myMemManage.getStackReg(instruction.result.name);
         mipsInstructions.add(new MipsInstruction(MipsType.sw, reg0.name,"$sp",stack.getIndex()));
         myMemManage.freeTempReg(reg0);
         myMemManage.freeTempReg(reg1);
         myMemManage.freeTempReg(reg2);
     }
 
-    private void handleAllocateInstruction(BaseInstruction instruction) {
+    private void handleAllocateInstruction(Instruction instruction) {
         //如果是申请内存的话，我把它放到栈里
-        String virtualName=instruction.result.getName();
-        ValueType valueType=instruction.value1.getType();
+        String virtualName=instruction.result.name;
+        ValueType valueType=instruction.result.valueType;
         if (valueType==ValueType.onearray){
-            myMemManage.getStackReg(virtualName,Integer.parseInt(instruction.value1.onearrayNum));
+            myMemManage.getStackReg(virtualName,instruction.result.onearrayNum);
         }
         else if (valueType==ValueType.twoarray){
-            myMemManage.getStackReg(virtualName,Integer.parseInt(instruction.value1.onearrayNum)*Integer.parseInt(instruction.value1.twoarrayNum));
+            myMemManage.getStackReg(virtualName,instruction.result.onearrayNum*instruction.result.twoarrayNum);
         }
         else{
             myMemManage.getStackReg(virtualName);
@@ -428,12 +431,15 @@ public class codeToMips {
         int memsize=4*(2+ myMemManage.GLOBAL_UP-myMemManage.TEMP_DOWN);
         //函数调用参数可能还要加
         memsize+=maxParamSize*4;
-        for (BasicBlock block : function.getBasicBlocks()){
-            for (BaseInstruction instruction:block.getInstructions()){
+        for (BasicBlock block : function.basicBlocks){
+            for (Instruction instruction:block.instructions){
                 if (instruction instanceof AllocateInstruction){
-                    if(instruction.value1.getType()==ValueType.i32) memsize+=4;
-                    else if (instruction.value1.getType()==ValueType.onearray) memsize+=Integer.parseInt(instruction.value1.onearrayNum)*4;
-                    else if (instruction.value1.getType()==ValueType.twoarray) memsize+=Integer.parseInt(instruction.value1.onearrayNum)*Integer.parseInt(instruction.value1.twoarrayNum) * 4;
+                    if(instruction.result.valueType==ValueType.i32) memsize+=4;
+                    else if (instruction.result.valueType==ValueType.onearray) memsize+=instruction.result.onearrayNum*4;
+                    else if (instruction.result.valueType==ValueType.twoarray) memsize+=instruction.result.onearrayNum*instruction.result.twoarrayNum * 4;
+                    else if (instruction.result.valueType==ValueType.pointer){
+                        memsize+=4;
+                    }
                 }//二元表达式 a+b 需要把这个值临时存起来
                 else if (instruction instanceof BinaryInstruction){
                     memsize += 4;
@@ -453,37 +459,43 @@ public class codeToMips {
 
     //处理define函数
     private void handleFunc2(Function function){
-        mipsInstructions.add(new MipsInstruction(MipsType.func, function.getName()));
-        if (function.getName().equals("putch")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","11"));
-        else if (function.getName().equals("putint")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","1"));
-        else if (function.getName().equals("getint")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","5"));
+        mipsInstructions.add(new MipsInstruction(MipsType.func, function.name));
+        if (function.name.equals("putch")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","11"));
+        else if (function.name.equals("putint")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","1"));
+        else if (function.name.equals("getint")) mipsInstructions.add(new MipsInstruction(MipsType.li,"$v0","5"));
         mipsInstructions.add(new MipsInstruction(MipsType.syscall));
         mipsInstructions.add(new MipsInstruction(MipsType.jr,"$ra"));
     }
 //处理data段，主要就是处理全局变量和函数
-    private void handleGlobal(GlobalVar global) {
+    private void handleGlobal(Global global) {
         MipsInstruction instruction=null;
         //如果是int
-        if (global.getType()== ValueType.i32) {
-            instruction = new MipsInstruction(MipsType.word,global.getName().replace("@",""),global.getNum());
+        if (global.valueType== ValueType.i32) {
+            instruction = new MipsInstruction(MipsType.word,global.name.replace("@",""),global.constNum);
         }//如果是一维数组
-        else if (global.getType() == ValueType.onearray){
+        else if (global.valueType == ValueType.onearray){
             if(global.arrayNum==null){
-                instruction=new MipsInstruction(MipsType.space,global.getName().replace("@",""),Integer.parseInt(global.onearrayNum)*4);
+                instruction=new MipsInstruction(MipsType.space,global.name.replace("@",""),global.onearrayNum*4);
             }
             else{
-                List<String> tempList=global.arrayNum;
+                List<String> tempList=new ArrayList<>();
+                for (Value value:global.arrayNum){
+                    tempList.add(value.constNum.toString());
+                }
                 //Collections.reverse(tempList);
-                instruction = new MipsInstruction(MipsType.word,global.getName().replace("@",""), tempList);
+                instruction = new MipsInstruction(MipsType.word,global.name.replace("@",""), tempList);
             }
         }//如果是二维数组
         else{
             if (global.arrayNum == null){
-                instruction = new MipsInstruction(MipsType.space, global.getName().replace("@",""), Integer.parseInt(global.onearrayNum)*Integer.parseInt(global.twoarrayNum)*4);
+                instruction = new MipsInstruction(MipsType.space, global.name.replace("@",""), global.onearrayNum*global.twoarrayNum*4);
             }
             else{
-                List<String> tempList=global.arrayNum;
-                instruction = new MipsInstruction(MipsType.word,global.getName().replace("@",""), tempList);
+                List<String> tempList=new ArrayList<>();
+                for (Value value:global.arrayNum){
+                    tempList.add(value.constNum.toString());
+                }
+                instruction = new MipsInstruction(MipsType.word,global.name.replace("@",""), tempList);
             }
         }
         mipsInstructions.add(instruction);
@@ -491,30 +503,30 @@ public class codeToMips {
     //找到除了全局变量以外的所有变量所处寄存器位置
     private RealRegister lookup(Value value){
         RealRegister temp;
-        if(value instanceof Const){
+            if(value instanceof Const){
             //拿到t0-t7中的一个空闲寄存器
             temp=myMemManage.getTempReg("tempReg"+tempRegisterIndex++);
             //把这个const的值存到对应的寄存器中
-            mipsInstructions.add(new MipsInstruction(MipsType.addiu,temp.name,"$zero",value.getName()));
+            mipsInstructions.add(new MipsInstruction(MipsType.addiu,temp.name,"$zero",value.name));
         }
         else{
             //看看value是否已经存到某个寄存器中了
-            temp=myMemManage.lookupTemp(value.getName());
+            temp=myMemManage.lookupTemp(value.name);
             if(temp==null){
                 //看看是否存在全局寄存器
-                temp=myMemManage.lookupGlobalReg(value.getName());
+                temp=myMemManage.lookupGlobalReg(value.name);
                 if (temp!=null) return temp;
                 //看看栈中有没有这个value
-                MyStack stack=myMemManage.lookupStack(value.getName());
+                MyStack stack=myMemManage.lookupStack(value.name);
                 //拿到t0-t7中的一个空闲寄存器
-                temp =myMemManage.getTempReg(value.getName());
+                temp =myMemManage.getTempReg(value.name);
                 mipsInstructions.add(new MipsInstruction(MipsType.lw, temp.name,"$sp",stack.getIndex()));
             }
 
         }
         return temp;
     }
-    private void handleInstruction(BaseInstruction instruction) {
+    private void handleInstruction(Instruction instruction) {
         mipsInstructions.add(new MipsInstruction(MipsType.debug,instruction));
         if (config.optimization){
             if (instruction instanceof AllocateInstruction) handleAllocateInstruction(instruction,true);
@@ -543,36 +555,36 @@ public class codeToMips {
 
     }
 
-    private void handleBinaryInstruction(BaseInstruction instruction, boolean b) {
+    private void handleBinaryInstruction(Instruction instruction, boolean b) {
         RealRegister reg1=lookup(instruction.value1);
         RealRegister reg2=null;
         String reg1name=reg1.name;
         String reg2name;
-        if (instruction.value2 instanceof Const){
-            reg2name=instruction.value2.getName();
+        if (instruction.value2.isConst){
+            reg2name=instruction.value2.constNum.toString();
         }
         else {
             reg2 = lookup(instruction.value2);
             reg2name = reg2.name;
         }
 
-        RealRegister reg0=myMemManage.getTempReg(instruction.result.getName());
+        RealRegister reg0=myMemManage.getTempReg(instruction.result.name);
         if (((BinaryInstruction) instruction).opCode==OpCode.add){
-            if (instruction.value2 instanceof  Const) mipsInstructions.add(new MipsInstruction(MipsType.addiu,reg0.name,reg1name,reg2name));
+            if (instruction.value2.isConst) mipsInstructions.add(new MipsInstruction(MipsType.addiu,reg0.name,reg1name,reg2name));
             else mipsInstructions.add(new MipsInstruction(MipsType.addu,reg0.name,reg1name,reg2name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.sub){
-            if (instruction.value2 instanceof Const) mipsInstructions.add(new MipsInstruction(MipsType.addiu,reg0.name,reg1name,"-"+reg2name));
-            else mipsInstructions.add(new MipsInstruction(MipsType.sub,reg0.name,reg1name,reg2name));
+            if (instruction.value2.isConst) mipsInstructions.add(new MipsInstruction(MipsType.addiu,reg0.name,reg1name,"-"+reg2name));
+            else mipsInstructions.add(new MipsInstruction(MipsType.subu,reg0.name,reg1name,reg2name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.mul){
-            if (instruction.value2 instanceof Const) {
+            if (instruction.value2.isConst) {
                 mulOptimization(reg0.name,reg1name,reg2name);
             }
             else mipsInstructions.add(new MipsInstruction(MipsType.mul,reg0.name,reg1name,reg2name));
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.sdiv){
-            if (instruction.value2 instanceof Const) {
+            if (instruction.value2.isConst) {
                 divOptimization(reg0.name,reg1name,reg2name,"div");
             }
             else{
@@ -581,7 +593,7 @@ public class codeToMips {
             }
         }
         else if (((BinaryInstruction) instruction).opCode==OpCode.srem){
-            if (instruction.value2 instanceof Const){
+            if (instruction.value2.isConst){
                 divOptimization(reg0.name,reg1name,reg2name,"srem");
             }
             else{
@@ -590,7 +602,7 @@ public class codeToMips {
             }
         }
         if (myMemManage.tempVirtualRegList[myMemManage.TEMP_UP-1].free==false){
-            MyStack stack=myMemManage.getStackReg(instruction.result.getName());
+            MyStack stack=myMemManage.getStackReg(instruction.result.name);
             mipsInstructions.add(new MipsInstruction(MipsType.sw, reg0.name,"$sp",stack.getIndex()));
             myMemManage.freeTempReg(reg0);
         }
@@ -697,24 +709,24 @@ public class codeToMips {
         }
     }
 
-    private void handleGetElementPtr(BaseInstruction instruction, boolean b) {
+    private void handleGetElementPtr(Instruction instruction, boolean b) {
         GetElementPtr getElementPtr=(GetElementPtr) instruction;
         //处理类似%2 = getelementptr [3 x i32], [3 x i32]* %1, i32 0, i32 1的语句
-        if (getElementPtr.bound2!=null){
-            RealRegister offset=lookup(getElementPtr.bound2);
+        if (getElementPtr.index2!=null){
+            RealRegister offset=lookup(getElementPtr.index2);
             RealRegister tempReg=myMemManage.getTempReg("temp"+tempRegisterIndex++);
             mipsInstructions.add(new MipsInstruction(MipsType.sll, tempReg.name,offset.name,"2"));
-            MyStack stack=myMemManage.lookupStack(instruction.value1.getName());
+            MyStack stack=myMemManage.lookupStack(instruction.value1.name);
             RealRegister array=myMemManage.getTempReg("temp"+tempRegisterIndex++);
             //取到数组的起始地址
             if(stack!=null){
                 mipsInstructions.add(new MipsInstruction(MipsType.addu, array.name,"$sp",stack.getIndex()));
             }//如果栈里没有，说明在全局变量里
             else{
-                mipsInstructions.add(new MipsInstruction(MipsType.la, array.name,instruction.value1.getName().replace("@","")));
+                mipsInstructions.add(new MipsInstruction(MipsType.la, array.name,instruction.value1.name.replace("@","")));
             }
             mipsInstructions.add(new MipsInstruction(MipsType.add,tempReg.name,array.name, tempReg.name));
-            MyStack cunStack=myMemManage.getStackReg(getElementPtr.result.getName());
+            MyStack cunStack=myMemManage.getStackReg(getElementPtr.result.name);
             cunStack.isArray=true;
             mipsInstructions.add(new MipsInstruction(MipsType.sw,tempReg.name,"$sp",cunStack.getIndex()));
             myMemManage.freeTempReg(tempReg);
@@ -722,29 +734,29 @@ public class codeToMips {
             myMemManage.freeTempReg(array);
         }//处理类似%3 = getelementptr i32, i32* %2, i32 1的语句
         else{
-            RealRegister offset=lookup(getElementPtr.bound1);
+            RealRegister offset=lookup(getElementPtr.index1);
             RealRegister tempReg=myMemManage.getTempReg("temp"+tempRegisterIndex++);
-            RealRegister tempReg2=myMemManage.lookupGlobalReg(getElementPtr.value1.getName());
+            RealRegister tempReg2=myMemManage.lookupGlobalReg(getElementPtr.value1.name);
             RealRegister temp;
             //这个value1的值不一定在栈里，也可能存在全局寄存器了
             if (tempReg2!=null){
                 temp=myMemManage.getTempReg("temp"+tempRegisterIndex++);
             }
             else{
-                MyStack stack=myMemManage.lookupStack(getElementPtr.value1.getName());
+                MyStack stack=myMemManage.lookupStack(getElementPtr.value1.name);
                 if (stack!=null){
                     temp=myMemManage.getTempReg("temp"+tempRegisterIndex++);
                     mipsInstructions.add(new MipsInstruction(MipsType.lw, temp.name,"$sp", stack.getIndex()));
                 }
                 else{
-                    temp=myMemManage.lookupTemp(getElementPtr.value1.getName());
+                    temp=myMemManage.lookupTemp(getElementPtr.value1.name);
                 }
             }
 
             mipsInstructions.add(new MipsInstruction(MipsType.sll, tempReg.name,offset.name,"2"));
             if (tempReg2!=null) mipsInstructions.add(new MipsInstruction(MipsType.add, temp.name,tempReg2.name,tempReg.name));
             else mipsInstructions.add(new MipsInstruction(MipsType.add,temp.name,temp.name, tempReg.name));
-            MyStack result=myMemManage.getStackReg(getElementPtr.result.getName());
+            MyStack result=myMemManage.getStackReg(getElementPtr.result.name);
             result.isArray=true;
             mipsInstructions.add(new MipsInstruction(MipsType.sw,temp.name,"$sp",result.getIndex()));
             myMemManage.freeTempReg(tempReg);
@@ -753,36 +765,37 @@ public class codeToMips {
         }
     }
 
-    private void handleCallInstruction(BaseInstruction instruction, boolean b) {
+    private void handleCallInstruction(Instruction instruction, boolean b) {
         //目前先不做优化
         handleCallInstruction(instruction);
     }
 
-    private void handleIcmpInstruction(BaseInstruction instruction, boolean b) {
+    private void handleIcmpInstruction(Instruction instruction, boolean b) {
         handleIcmpInstruction(instruction);
     }
 
-    private void handleRetInstruction(BaseInstruction instruction, boolean b) {
+    private void handleRetInstruction(Instruction instruction, boolean b) {
         handleRetInstruction(instruction);
     }
 
-    private void handleBranchInstruction(BaseInstruction instruction, boolean b) {
+    private void handleBranchInstruction(Instruction instruction, boolean b) {
         BranchInstruction branchInstruction=(BranchInstruction) instruction;
         if (branchInstruction.cond!=null){
-            RealRegister reg0=myMemManage.lookupTemp(branchInstruction.cond.getName());
-            mipsInstructions.add(new MipsInstruction(MipsType.beq,reg0.name,"$zero",curFunction.getName()+"_label_"+branchInstruction.value2.getName().replace("%","_")));
-            //mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value2.getName().replace("%","_")));
-            String nextBlockName=curFunction.getBasicBlocks().get(basicIndex+1).getName();
-            if (!nextBlockName.equals(branchInstruction.value1.getName())) mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value1.getName().replace("%","_")));
+            RealRegister reg0=myMemManage.lookupTemp(branchInstruction.cond.name);
+            mipsInstructions.add(new MipsInstruction(MipsType.beq,reg0.name,"$zero",curFunction.name+"_label_"+branchInstruction.value2.name.replace("%","_")));
+            //mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.name+"_label_"+branchInstruction.value2.name.replace("%","_")));
+            String nextBlockName=curFunction.basicBlocks.get(basicIndex+1).name;
+            if (!nextBlockName.equals(branchInstruction.value1.name)) mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.name+"_label_"+branchInstruction.value1.name.replace("%","_")));
             myMemManage.freeTempReg(reg0);
         }
         else{
-            mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.getName()+"_label_"+branchInstruction.value1.getName().replace("%","_")));
+            String nextBlockName=curFunction.basicBlocks.get(basicIndex+1).name;
+            if (!nextBlockName.equals(branchInstruction.value1.name)) mipsInstructions.add(new MipsInstruction(MipsType.j,curFunction.name+"_label_"+branchInstruction.value1.name.replace("%","_")));
         }
     }
 
-    private void handleStoreInstruction(BaseInstruction instruction, boolean b) {
-        RealRegister globalReg=myMemManage.lookupTemp(instruction.value2.getName());
+    private void handleStoreInstruction(Instruction instruction, boolean b) {
+        RealRegister globalReg=myMemManage.lookupTemp(instruction.value2.name);
         if (globalReg!=null){
             RealRegister tempReg=lookup(instruction.value1);
             mipsInstructions.add(new MipsInstruction(MipsType.move,globalReg.name,tempReg.name));
@@ -792,21 +805,21 @@ public class codeToMips {
         handleStoreInstruction(instruction);
     }
 
-    private void handleZextInstruction(BaseInstruction instruction, boolean b) {
+    private void handleZextInstruction(Instruction instruction, boolean b) {
         handleZextInstruction(instruction);
     }
 
-    private void handleLoadInstruction(BaseInstruction instruction, boolean b) {
-        RealRegister globalReg=myMemManage.lookupTemp(instruction.value1.getName());
+    private void handleLoadInstruction(Instruction instruction, boolean b) {
+        RealRegister globalReg=myMemManage.lookupTemp(instruction.value1.name);
         if (globalReg!=null){
-            myMemManage.virtual2Reg.put(instruction.result.getName(),globalReg);
+            myMemManage.virtual2Reg.put(instruction.result.name,globalReg);
             return;
         }
         handleLoadInstruction(instruction);
     }
 
-    private void handleAllocateInstruction(BaseInstruction instruction, boolean b) {
-        String varName=instruction.result.getName();
+    private void handleAllocateInstruction(Instruction instruction, boolean b) {
+        String varName=instruction.result.name;
         //相比优化前来说，有可能这个值被存到全局寄存器了
         if (myMemManage.lookupTemp(varName)!=null){
             return;
